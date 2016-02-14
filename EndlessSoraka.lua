@@ -198,7 +198,7 @@ class("Soraka")
 	
 	function Soraka:OnTickSupport()
 		
-		if GetTickCount() % 6 ~= 5 then return end
+		--if GetTickCount() % 6 ~= 5 then return end
 		
 		self.castThisTick = false
 		
