@@ -1,6 +1,7 @@
 if myHero.charName ~= "Soraka" then return end
 
-require "VPrediction"
+--require "VPrediction"
+--local vp = VPrediction()
 
 class("Soraka")
 	function Soraka:__init(util, base, orbwalk)
@@ -8,10 +9,21 @@ class("Soraka")
 			return
 		end
 		
+		--if FileExist(LIB_PATH .. "/HPrediction.lua") then
+		--	require "DivinePred"
+		--	self.dp = DivinePred()
+		--	self.dpQ = CircleSS(1500, 770, 110, 0.5, math.huge)
+		--else
+			--self.vp = VPrediction()
+		--end
+		
 		self.spellQ = { name = myHero:GetSpellData(_Q).name, range = 770, delay = 0.5, speed = 1500, width = 110 }
 		self.spellW = { name = myHero:GetSpellData(_W).name, range = 539, delay = 0.5, speed = 1000, width = 0, healing = { 70, 110, 150, 190, 230 }, extraAp = 35 }
 		self.spellE = { name = myHero:GetSpellData(_E).name, range = 880, delay = 0.6, speed = 2000, width = 25 }
 		self.spellR = { name = myHero:GetSpellData(_R).name, delay = 0.5, range = math.huge }
+		
+		UPL:AddSpell(_Q, { speed = 1500, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
+		UPL:AddSpell(_E, { speed = 2000, delay = 0.6, range = 880, width = 25, collision = false, aoe = true, type = "circular" })
 		
 		self.bestHealTarget = nil
 		self.healEngine = nil
@@ -20,7 +32,7 @@ class("Soraka")
 		self.orbWalk = orbwalk
 		self.aaRange = myHero.range
 		self.menu = scriptConfig("[Endless Soraka]", "EndlessSoraka")
-		self.vp = VPrediction()
+		
 		self.castThisTick = false
 		self.recalling = false
 		self.friendlyTowersRange = 0
@@ -116,7 +128,7 @@ class("Soraka")
 		self.orbWalk:OnProcessSpell(unit, spell)
 		if self.menu.e.UnderInterrupt and (myHero:CanUseSpell(_E) == 0) then
 			if unit and self.Interrupt[unit.charName] ~= nil and self.menu.e["e" .. self.Interrupt[unit.charName]["stop"]["spellName"]] and unit:GetDistance(myHero) < self.spellE["range"] then
-				local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(unit, self.spellE["delay"], self.spellE["width"], self.spellE["range"], self.spellE["speed"], myHero, false)
+				local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, unit)
 				if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellE["range"] then
 					CastSpell(_E, CastPosition.x, CastPosition.z)
 					self.castThisTick = true
@@ -266,7 +278,7 @@ class("Soraka")
 			if not self.castThisTick and spellRC and myHpPerc < 40 then
 				eInRange = 0
 				for i, eHero in pairs(GetEnemyHeroes()) do
-					if eHero and not eHero.dead and target:GetDistance(eHero) < eHero.range then
+					if eHero and not eHero.dead and myHero:GetDistance(eHero) < eHero.range then
 						eInRange = eInRange + 1
 					end
 				end
@@ -282,7 +294,7 @@ class("Soraka")
 			for i, target in pairs(GetEnemyHeroes()) do
 				if ValidTarget(target, self.spellQ["range"] + 250) and not target.dead then
 					if spellQC and self.menu.q.HP > myHpPerc and not self.castThisTick and self.menu.q["q" .. target.charName] then
-						local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(target, self.spellQ["delay"], self.spellQ["width"], self.spellQ["range"], self.spellQ["speed"], myHero, false)
+						local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, target)
 						if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellQ["range"] then
 							CastSpell(_Q, CastPosition.x, CastPosition.z)
 							self.castThisTick = true
@@ -291,7 +303,7 @@ class("Soraka")
 				end
 				if self.menu.e.InCombo and ValidTarget(target, self.spellE["range"] + 250) and not target.dead then
 					if spellEC and not self.castThisTick and self.menu.e["e" .. target.charName] then
-						local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(target, self.spellE["delay"], self.spellE["width"], self.spellE["range"], self.spellE["speed"], myHero, false)
+						local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, target)
 						if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellE["range"] then
 							CastSpell(_E, CastPosition.x, CastPosition.z)
 							self.castThisTick = true
@@ -305,7 +317,7 @@ class("Soraka")
 						if tower and tower.team == myHero.team and target:GetDistance(tower) < 300 then
 							if ValidTarget(target, self.spellE["range"] + 250) and not target.dead then
 								if spellEC and not self.castThisTick and self.menu.e["e" .. target.charName] then
-									local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(target, self.spellE["delay"], self.spellE["width"], self.spellE["range"], self.spellE["speed"], myHero, false)
+									local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, target)
 									if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellE["range"] then
 										CastSpell(_E, CastPosition.x, CastPosition.z)
 									end
@@ -344,14 +356,14 @@ class("Soraka")
 		
 		for i, target in pairs(GetEnemyHeroes()) do
 			if spellQC and self.menu.q.HP > myHpPerc and not self.castThisTick and self.menu.q["q" .. target.charName] and self.menu.flee.UseQ then
-				local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(target, self.spellQ["delay"], self.spellQ["width"], self.spellQ["range"], self.spellQ["speed"], myHero, false)
+				local CastPosition, HitChance, Position = _G.UPL:Predict(_Q, myHero, target)
 				if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellQ["range"] then
 					CastSpell(_Q, CastPosition.x, CastPosition.z)
 					self.castThisTick = true
 				end
 			end
 			if spellEC and not self.castThisTick and self.menu.e["e" .. target.charName] and self.menu.flee.UseE then
-				local CastPosition, HitChance, Position = self.vp:GetCircularCastPosition(target, self.spellE["delay"], self.spellE["width"], self.spellE["range"], self.spellE["speed"], myHero, false)
+				local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, target)
 				if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellE["range"] then
 					CastSpell(_E, CastPosition.x, CastPosition.z)
 					self.castThisTick = true
@@ -605,11 +617,19 @@ class("HealEngine")
 	
 class("Base")
 	function Base:__init(utility, drawing)
+		self.enemyMinions = minionManager(MINION_ENEMY, 1000, myHero, MINION_SORT_HEALTH_ASC)
 		self.util = utility
 		self.draw = drawing
 		self.menu = scriptConfig("[Endless Support]", "EndlessSupport")
+		_G.UPL:AddToMenu(self.menu)
 		self:SkinChangerOnLoad()
 		self:MagWardMenu()
+		self:AutoLevelMenu()
+		self:DrawingAddMenu()
+	end
+	
+	function Base:Update()
+		self.enemyMinions:update()
 	end
 	
 	function Base:SkinChangerOnLoad()
@@ -648,17 +668,61 @@ class("Base")
 	
 	function Base:AutoLevelMenu()
 		self.menu:addSubMenu("[Auto Level]", "autoLevel")
-		self.menu.wards:addParam("enable", "Enable Auto Level", 1, true)
+		self.menu.autoLevel:addParam("enable", "Enable Auto Level", SCRIPT_PARAM_ONOFF, false)
+		self.lastLeveled = 0
+		self.lastLevelTime = os.clock()
+		if myHero.charName == "Soraka" then
+			self.levelOrder = { 2, 1, 2, 3, 2, 4, 2, 1, 2, 1, 4, 1, 1, 3, 3, 4, 3, 3 }
+		end
 	end
 	
 	function Base:AutoLevel()
-		
+		if self.menu.autoLevel.enable and (os.clock() - self.lastLevelTime) > 10 and self.lastLeveled ~= (myHero.level - 1) and self.levelOrder ~= nil then
+			mySpellSlot = self.levelOrder[self.lastLeveled]
+			if mySpellSlot ~= nil and (mySpellSlot == 1 or mySpellSlot == 2 or mySpellSlot == 3 or mySpellSlot == 4) then
+				nextLevelSpell = self:GetSpellSlot(mySpellSlot)
+				if nextLevelSpell ~= nil then
+					LevelSpell(nextLevelSpell)
+				end
+			end
+		end
+		self.lastLevelTime = os.clock()
+	end
+	
+	function Base:GetSpellSlot(value)
+		if value == 1 then 
+			return SPELL_1
+		elseif value == 2 then
+			return SPELL_2
+		elseif value == 3 then
+			return SPELL_3
+		elseif value == 4 then
+			return SPELL_4
+		end
+	end
+	
+	function Base:MenuStreamingMode()
+		self.menu:addParam("streamingMode", "Enable Streaming Mode", SCRIPT_PARAM_ONOFF, false)
+		self.streamingIsEnabled = self.menu.streamingMode
 	end
 	
 	function Base:StreamingMode()
-		_G.print = function() end
-		_G.PrintChat = function() end
-		DisableOverlay()
+		if not self.streamingIsEnabled and self.menu.streamingMode then
+			self.oldPrint = _G.print
+			self.oldPrintChat = _G.PrintChat
+			_G.print = function() end
+			_G.PrintChat = function() end
+			DisableOverlay()
+		else
+			self:DisableSteamingMode()
+		end
+	end
+	
+	function Base:DisableSteamingMode()
+		if self.streamingIsEnabled and not self.menu.streamingMode then
+			_G.print = self.oldPrint
+			_G.PrintChat = self.oldPrintChat
+		end
 	end
 	
 	function Base:MagWardMenu()
@@ -730,6 +794,72 @@ class("Base")
 		end
 	end
 	
+	function Base:DrawingAddMenu()
+		self.menu:addSubMenu("[Drawing]", "drawing")
+			self.menu.drawing:addParam('FriendTowers', 'Draw Friendly Tower Range', SCRIPT_PARAM_ONOFF, true)
+			self.menu.drawing:addParam('EnemyTowers', 'Draw Enemy Tower Range', SCRIPT_PARAM_ONOFF, true)
+			self.menu.drawing:addParam('HeroMovement', 'Draw Enemy Tower Range', SCRIPT_PARAM_ONOFF, true)
+			self.menu.drawing:addParam('LastHitIndicator', 'Last Hit Indicator', SCRIPT_PARAM_ONOFF, true)
+	end
+	
+	
+	function Base:DrawingTowers()
+		if self.menu.drawing.FriendTowers or self.menu.drawing.EnemyTowers then
+			for i=1, objManager.iCount do
+				object = objManager:getObject(i)
+				if object ~= nil then
+					if myHero:GetDistance(object) < 1200 and object.type == "obj_AI_Turret" and not object.dead then
+						if object.team ~= myHero.team and self.menu.drawing.FriendTowers then
+							DrawCircle3D(object.x, object.y, object.z, 850, 1, ARGB(myHero:GetDistance(object) / 1200 * 255, 255, 0, 0))
+						elseif object.team == myHero.team and self.menu.drawing.EnemyTowers then
+							DrawCircle3D(object.x, object.y, object.z, 850, 1, ARGB(255 - (myHero:GetDistance(object) / 1200 * 255), 0, 255, 0))
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	function Base:DrawingMovement()
+		if not self.menu.drawing.HeroMovement then return end
+		
+		NearCount = 0
+		TotalX = 0
+		TotalY = 0
+		TotalZ = 0
+		for i=1, objManager.iCount do
+			object = objManager:getObject(i)
+			if object ~= nil then
+				if myHero:GetDistance(object) < 1200 and object.team == myHero.team then
+					NearCount = NearCount + 1
+					TotalX = TotalX + object.x
+					TotalY = TotalY + object.y
+					TotalZ = TotalZ + object.z
+				end
+			end
+		end
+		AverageX = TotalX / NearCount
+		AverageY = TotalY / NearCount
+		AverageZ = TotalZ / NearCount
+		if NearCount > 0 then
+			DrawLine3D(myHero.x, myHero.y, myHero.z, AverageX, AverageY, AverageZ, 1, 0x88888888)
+		end
+	end
+	
+	function Base:OnDrawHPBarMinion()
+		if not self.menu.drawing.LastHitIndicator then return end
+		for _, minion in pairs(self.enemyMinions.objects) do
+			local adDamage = myHero:CalcDamage(minion, myHero.totalDamage)
+			
+			local posY = GetUnitHPBarPos(minion).y + (GetUnitHPBarOffset(minion).y)
+			local posX = GetUnitHPBarPos(minion).x - 31
+			local hpBar = adDamage / minion.maxHealth * 62
+			if posX ~= nil then
+				DrawLine(posX, posY, posX + hpBar, posY, 1, 0xFFFFFFFF)
+			end
+		end
+	end
+	
 class("ItemUsage")
 	function ItemUsage:__init()
 		self.lastPotion = 0
@@ -737,6 +867,8 @@ class("ItemUsage")
 		
 		self.heal = nil
 		self.exhaust = nil
+		self.ignite = nil
+		self.flash = nil
 		
 		self.menu = scriptConfig("[Endless Item Usage]", "EndlessItems")
 		self.menu:addParam('UseItems', 'Enable Item Usage', SCRIPT_PARAM_ONOFF, true)
@@ -746,6 +878,8 @@ class("ItemUsage")
 		self.menu:addParam('UsePotionRegen', 'Regenerate Potion', SCRIPT_PARAM_ONOFF, true)
 		self.menu:addParam('UsePotionMiniRegen', 'Mini Regenerate Potion', SCRIPT_PARAM_ONOFF, true)
 		self.menu:addParam("info","------------------", SCRIPT_PARAM_INFO, "")
+		self.menu:addParam('UseFQO', 'Enable Frost Queens (Offensive)', SCRIPT_PARAM_ONOFF, true)
+		self.menu:addParam('UseFQD', 'Enable Frost Queens (Defensive)', SCRIPT_PARAM_ONOFF, true)
 		
 		self.menua = scriptConfig("[Endless Summoner Usage]", "EndlessSummoner")
 		self.menua:addParam('UseSummoners', 'Enable Summoner Usage', SCRIPT_PARAM_ONOFF, true)
@@ -759,6 +893,30 @@ class("ItemUsage")
 		elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerheal") then
 			self.heal = SUMMONER_2
 			self.menua:addParam('UseHeal', 'Enable Heal Usage', SCRIPT_PARAM_ONOFF, true)
+		end
+		
+		if myHero:GetSpellData(SUMMONER_1).name:find("summonerdot") then
+			self.ignite = SUMMONER_1
+			self.menua:addParam('UseIgnite', 'Enable Ignite Usage', SCRIPT_PARAM_ONOFF, true)
+		elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerdot") then
+			self.ignite = SUMMONER_2
+			self.menua:addParam('UseIgnite', 'Enable Ignite Usage', SCRIPT_PARAM_ONOFF, true)
+		end
+		
+		if myHero:GetSpellData(SUMMONER_1).name:find("summonerflash") then
+			self.flash = SUMMONER_1
+			self.menua:addParam('UseFlash', 'Enable Flash Usage', SCRIPT_PARAM_ONOFF, true)
+		elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerflash") then
+			self.flash = SUMMONER_2
+			self.menua:addParam('UseFlash', 'Enable Flash Usage', SCRIPT_PARAM_ONOFF, true)
+		end
+		
+		if myHero:GetSpellData(SUMMONER_1).name:find("summonerexhaust") then
+			self.flash = SUMMONER_1
+			self.menua:addParam('UseExhaust', 'Enable Exhaust Usage', SCRIPT_PARAM_ONOFF, true)
+		elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerexhaust") then
+			self.flash = SUMMONER_2
+			self.menua:addParam('UseExhaust', 'Enable Exhaust Usage', SCRIPT_PARAM_ONOFF, true)
 		end
 	end
 	
@@ -790,7 +948,41 @@ class("ItemUsage")
 				end
 			end
 			
-			--Elixer usage
+			if self.menu.UseFQO then --Frost Queens Offensive
+				fqq = self:GetSlotItemFromName("ItemGlacialSpikeCast")
+				if fqq and fqq ~= nil and IsReady(fqq) then
+					countInRange = 0
+					mTarget = nil
+					for _, eHero in pairs(GetEnemyHeroes()) do
+						if myHero:GetDistance(eHero) < 750 and ((eHero.health / eHero.maxHealth) * 100) < 75 then
+							countInRange = countInRange + 1
+							mTarget = eHero
+						end
+					end
+					if countInRange > 1 and mTarget ~= nil then
+						CastSpell(ffq, mTarget)
+					end
+				end
+			end
+			
+			if self.menu.UseFQD then --Frost Queens Defensive
+				fqq = self:GetSlotItemFromName("ItemGlacialSpikeCast")
+				if fqq and fqq ~= nil and IsReady(fqq) then
+					countInRange = 0
+					mTarget = nil
+					for _, eHero in pairs(GetEnemyHeroes()) do
+						if myHero:GetDistance(eHero) < 650 and myHpPerc < 60 then
+							countInRange = countInRange + 1
+							mTarget = eHero
+						end
+					end
+					if countInRange > 0 and mTarget ~= nil then
+						CastSpell(ffq, mTarget)
+					end
+				end
+			end
+			
+			
 			
 		end
 	end
@@ -800,10 +992,28 @@ class("ItemUsage")
 			
 			myHpPerc = (myHero.health / myHero.maxHealth) * 100
 			myManaPerc = (myHero.mana / myHero.maxMana) * 100
-			nearMe = self:CountEnemiesNearUnitReg(myHero, 1000)
+			nearMe = self:CountEnemiesNearUnitReg(myHero, 800)
 			
 			if self.heal and myHero:CanUseSpell(self.heal) and myHpPerc < 20 and nearMe > 0 then
 				CastSpell(self.heal, myHero)
+			end
+			
+			if self.ignite and myHero:CanUseSpell(self.ignite) and self.menua.UseIgnite and nearMe > 0 then
+				for _, eHero in pairs(GetEnemyHeroes()) do
+					HpPerc = (eHero.health / eHero.maxHealth) * 100
+					if eHero and ValidTarget(eHero, 400) and HpPerc < 15 then
+						CastSpell(self.heal, eHero)
+					end
+				end
+			end
+			
+			if self.exhaust and myHero:CanUseSpell(self.exhaust) and nearMe > 0 then
+				for _, eHero in pairs(GetEnemyHeroes()) do
+					HpPerc = (eHero.health / eHero.maxHealth) * 100
+					if eHero and ValidTarget(eHero, 400) and HpPerc < 15 then
+						CastSpell(self.heal, eHero)
+					end
+				end
 			end
 			
 		end
@@ -915,50 +1125,59 @@ class("Utilitys")
 			return false
 		end
 	end
-	
-	function Utilitys:IsOtherOrbWalkerLoaded() --Credit to S1mple
-		DelayAction(function ()
-			if _G.Reborn_Loaded or _G.AutoCarry then
-				self.orbWalk = "SAC:R"
-			elseif _G.MMA_Loaded or _G.MMA_Version then
-				self.orbWalk = "MMA"
-			elseif _G.NebelwolfisOrbWalkerInit or _G.NebelwolfisOrbWalkerLoaded then
-				self.orbWalk = "NOW"
-			elseif _Pewalk then
-				self.orbWalk = "PEW"
-			elseif _G.SxOrb or SxOrb then
-				self.orbWalk = "SxOrb"
-			elseif _G.S1OrbLoaded then
-				self.orbWalk = "S1mpleOrbWalk"
-			else
-				self.orbWalk = "custom"
-			end
-		end,0.5)
-	end
 
 class("AutoUpdate")
-	function AutoUpdate:__init(utility)
-		self.loaded = false
+	function AutoUpdate:__init()
 		self.autoUpdate = false
-		self.localVer = 1001
-		self.utils = utility
+		self.localVer = 1002
+		
+		self.srvAdr = "raw.githubusercontent.com"
+		self.scrAdr = "/azer0/0BoL/master/"
+		self.scrName = "EndlessSoraka"
+		self.mType = "RELEASE"
+		if self.mType == "PRE" then
+			self.addrFull = "http://".. self.srvAdr .. self.scrAdr .. "/" .. self.scrName .. "-PRE.lua"
+		else
+			self.addrFull = "http://".. self.srvAdr .. self.scrAdr .. "/" .. self.scrName .. ".lua"
+		end
 	end
 
 	function AutoUpdate:FindUpdates()
 		if not self.autoUpdate then return end
-		
+		ServerVersionD = GetWebResult(self.srvAdr , self.scrAdr .."/".. self.scrName ..".version")
+		if ServerVersionD then
+			ServerVersion = tonumber(ServerVersionD)
+			if ServerVersion then
+				if ServerVersion > tonumber(Version) then
+					DownloadFile(self.addrFull, SCRIPT_PATH .. self.scrName .. ".lua", function ()
+						print("Endless Soraka updated, press 2x F9 to reload.")
+					end)
+				end
+			end
+		end
 	end
 
 local myInstanceChar, myInstanceHeal, myInstanceBase, myUtilInstance, myDrawInstance, myOrbWalk, myItemUsage, myAutoUpdater = nil, nil, nil, nil, nil, nil, nil, nil
 local hasLoadedChar = false
 
-local scriptVersion = 1001
-local autoUpdate = true
-
 function OnLoad()
+	if not _G.UPLloaded then
+		if FileExist(LIB_PATH .. "/UPL.lua") then
+			require("UPL")
+			_G.UPL = UPL()
+		else 
+			print("Downloading UPL, please don't press F9")
+			DelayAction(function() DownloadFile("https://raw.github.com/nebelwolfi/BoL/master/Common/UPL.lua".."?rand="..math.random(1,10000), LIB_PATH.."UPL.lua", function () print("Successfully downloaded UPL. Press F9 twice.") end) end, 3) 
+			return
+		end
+	end
+
+	updater = AutoUpdate()
+	updater:FindUpdates()
+
 	myUtilInstance = Utilitys()
 	myAutoUpdater = AutoUpdate(myUtilInstance)
-	myUtilInstance:IsOtherOrbWalkerLoaded()
+	--myUtilInstance:IsOtherOrbWalkerLoaded()
 	myDrawInstance = Drawing()
 	myInstanceBase = Base(myUtilInstance, myDrawInstance)
 	if not myUtilInstance or myUtilInstance.orbWalk == nil or myUtilInstance.orbWalk == "custom" then
@@ -994,6 +1213,21 @@ function OnUnLoad()
 end
 
 function OnTick()
-	myItemUsage:OnTick()
-	myItemUsage:SummonerTick()
+	if myItemUsage ~= nil then
+		myItemUsage:OnTick()
+		myItemUsage:SummonerTick()
+	end
+	if myInstanceBase ~= nil then
+		myInstanceBase:Update()
+		myInstanceBase:StreamingMode()
+		myInstanceBase:AutoLevel()
+	end
+end
+
+function OnDraw()
+	if myInstanceBase ~= nil then
+		myInstanceBase:DrawingMovement()
+		myInstanceBase:DrawingTowers()
+		myInstanceBase:OnDrawHPBarMinion()
+	end
 end
