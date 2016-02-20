@@ -1,6 +1,6 @@
 if myHero.charName ~= "Soraka" then return end
 
---require "VPrediction"
+require "VPrediction"
 --local vp = VPrediction()
 
 class("Soraka")
@@ -22,8 +22,8 @@ class("Soraka")
 		self.spellE = { name = myHero:GetSpellData(_E).name, range = 880, delay = 0.6, speed = 2000, width = 25 }
 		self.spellR = { name = myHero:GetSpellData(_R).name, delay = 0.5, range = math.huge }
 		
-		UPL:AddSpell(_Q, { speed = 1500, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
-		UPL:AddSpell(_E, { speed = 2000, delay = 0.6, range = 880, width = 25, collision = false, aoe = true, type = "circular" })
+		_G.UPL:AddSpell(_Q, { speed = 1500, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
+		_G.UPL:AddSpell(_E, { speed = 2000, delay = 0.6, range = 880, width = 25, collision = false, aoe = true, type = "circular" })
 		
 		self.bestHealTarget = nil
 		self.healEngine = nil
@@ -126,7 +126,7 @@ class("Soraka")
 
 	function Soraka:OnProcessSpell(unit, spell)
 		self.orbWalk:OnProcessSpell(unit, spell)
-		if self.menu.e.UnderInterrupt and (myHero:CanUseSpell(_E) == 0) then
+		if self.menu.e.UnderInterrupt and myHero:CanUseSpell(_E) then
 			if unit and self.Interrupt[unit.charName] ~= nil and self.menu.e["e" .. self.Interrupt[unit.charName]["stop"]["spellName"]] and unit:GetDistance(myHero) < self.spellE["range"] then
 				local CastPosition, HitChance, Position = _G.UPL:Predict(_E, myHero, unit)
 				if CastPosition and HitChance >= 2 and GetDistance(CastPosition) < self.spellE["range"] then
@@ -677,12 +677,13 @@ class("Base")
 	end
 	
 	function Base:AutoLevel()
-		if self.menu.autoLevel.enable and (os.clock() - self.lastLevelTime) > 10 and self.lastLeveled ~= (myHero.level - 1) and self.levelOrder ~= nil then
+		if self.menu.autoLevel.enable and self.lastLeveled ~= (myHero.level) and self.levelOrder ~= nil then
 			mySpellSlot = self.levelOrder[self.lastLeveled]
 			if mySpellSlot ~= nil and (mySpellSlot == 1 or mySpellSlot == 2 or mySpellSlot == 3 or mySpellSlot == 4) then
 				nextLevelSpell = self:GetSpellSlot(mySpellSlot)
 				if nextLevelSpell ~= nil then
 					LevelSpell(nextLevelSpell)
+					self.lastLeveled = self.lastLeveled + 1
 				end
 			end
 		end
@@ -830,7 +831,7 @@ class("Base")
 		for i=1, objManager.iCount do
 			object = objManager:getObject(i)
 			if object ~= nil then
-				if myHero:GetDistance(object) < 1200 and object.team == myHero.team then
+				if myHero:GetDistance(object) < 1200 and object.team ~= myHero.team then
 					NearCount = NearCount + 1
 					TotalX = TotalX + object.x
 					TotalY = TotalY + object.y
@@ -861,14 +862,23 @@ class("Base")
 	end
 	
 class("ItemUsage")
-	function ItemUsage:__init()
+	function ItemUsage:__init(util)
 		self.lastPotion = 0
 		self.lastDefensive = 0
+		self.utils = util
+		
+		self.vp = VPrediction()
 		
 		self.heal = nil
 		self.exhaust = nil
 		self.ignite = nil
 		self.flash = nil
+		
+		self.potion = nil
+		self.frostQueen = nil
+		self.locket = nil
+		self.fotm = nil
+		self.zohnyas = nil
 		
 		self.menu = scriptConfig("[Endless Item Usage]", "EndlessItems")
 		self.menu:addParam('UseItems', 'Enable Item Usage', SCRIPT_PARAM_ONOFF, true)
@@ -880,6 +890,9 @@ class("ItemUsage")
 		self.menu:addParam("info","------------------", SCRIPT_PARAM_INFO, "")
 		self.menu:addParam('UseFQO', 'Enable Frost Queens (Offensive)', SCRIPT_PARAM_ONOFF, true)
 		self.menu:addParam('UseFQD', 'Enable Frost Queens (Defensive)', SCRIPT_PARAM_ONOFF, true)
+		self.menu:addParam('UseLocket', 'Enable Locket of the Iron Solari', SCRIPT_PARAM_ONOFF, true)
+		self.menu:addParam('UseFotM', 'Enable Face of the Mountain', SCRIPT_PARAM_ONOFF, true)
+		self.menu:addParam('UseZhonyas', 'Enable Zhonyas', SCRIPT_PARAM_ONOFF, true)
 		
 		self.menua = scriptConfig("[Endless Summoner Usage]", "EndlessSummoner")
 		self.menua:addParam('UseSummoners', 'Enable Summoner Usage', SCRIPT_PARAM_ONOFF, true)
@@ -920,6 +933,50 @@ class("ItemUsage")
 		end
 	end
 	
+	function ItemUsage:NewItemCheck()
+		
+		if self.potion == nil then
+			self.potion = self:GetSlotItemFromName("crystalflask")
+			if not self.potion then
+				self.potion = self:GetSlotItemFromName("RegenerationPotion")
+			end
+			if not self.potion then
+				self.potion = self:GetSlotItemFromName("itemminiregenpotion")
+			end
+			if self.potion ~= nil then
+				self.utils:post("New item detected [Potion]", 4)
+			end
+		end
+		
+		if self.frostQueen == nil then
+			self.frostQueen = self:GetSlotItemFromName("ItemGlacialSpikeCast")
+			if self.frostQueen ~= nil then
+				self.utils:post("New item detected [Frost Queen]", 4)
+			end
+		end
+		
+		if self.locket == nil then
+			self.locket = self:GetSlotItemFromName("IronStylus")
+			if self.locket ~= nil then
+				self.utils:post("New item detected [Locket]", 4)
+			end
+		end
+		
+		if self.fotm == nil then
+			self.fotm = self:GetSlotItemFromName("HealthBomb")
+			if self.fotm ~= nil then
+				self.utils:post("New item detected [FotM]", 4)
+			end
+		end
+		
+		if self.zohnyas == nil then
+			self.zohnyas = self:GetSlotItemFromName("ZhonyasHourglass")
+			if self.zohnyas ~= nil then
+				self.utils:post("New item detected [Zohnyas]", 4)
+			end
+		end
+	end
+	
 	function ItemUsage:OnTick()
 		--run through engage
 		--run through disengage
@@ -929,6 +986,7 @@ class("ItemUsage")
 			myHpPerc = (myHero.health / myHero.maxHealth) * 100
 			myManaPerc = (myHero.mana / myHero.maxMana) * 100
 			nearMe = self:CountEnemiesNearUnitReg(myHero, 1000)
+			nearMeClose = self:CountEnemiesNearUnitReg(myHero, 650)
 			
 			--Potion usage
 			if ((os.clock() - self.lastPotion >= 8 or self.lastPotion == 0) and myHpPerc < 25 and nearMe > 0) or ((os.clock() - self.lastPotion >= 15 or self.lastPotion == 0) and myManaPerc < 10) then
@@ -982,7 +1040,58 @@ class("ItemUsage")
 				end
 			end
 			
+			if self.menu.UseLocket then
+				locket = self:GetSlotItemFromName("IronStylus")
+				if locket and locket ~= nil and IsReady(locket) then
+					countInRange = nearMeClose
+					fCountInRange = 0
+					for _, fHero in pairs(GetAllyHeroes()) do
+						if myHero:GetDistance(fHero) < 600 and ((fHero.health / fHero.maxHealth) * 100) < 25 then
+							fCountInRange = fCountInRange + 1
+						end
+					end
+					if myHpPerc < 25 then
+						fCountInRange = fCountInRange + 1
+					end
+					if countInRange > 0 and fCountInRange > 1 then
+						CastSpell(locket)
+					end
+				end
+			end
 			
+			if self.menu.UseFotM then
+				face = self:GetSlotItemFromName("HealthBomb")
+				if face and face ~= nil and IsReady(face) then
+					countInRange = nearMeClose
+					fCountInRange = 0
+					for _, fHero in pairs(GetAllyHeroes()) do
+						if myHero:GetDistance(fHero) < 600 and ((fHero.health / fHero.maxHealth) * 100) < 25 then
+							fCountInRange = fCountInRange + 1
+						end
+					end
+					if myHpPerc < 25 then
+						fCountInRange = fCountInRange + 1
+					end
+					if countInRange > 0 and fCountInRange > 1 then
+						CastSpell(face)
+					end
+				end
+			end
+			
+			if self.menu.UseZhonyas then
+				zhonyas = self:GetSlotItemFromName("ZhonyasHourglass")
+				if zhonyas and zhonyas ~= nil and IsReady(zhonyas) then
+					if nearMeClose > 1 and myHpPerc < 15 then
+						CastSpell(zhonyas)
+					end
+				end
+			end
+			
+			--[[ 
+			ItemMercurial
+			ItemMorellosBane
+			
+			]]--
 			
 		end
 	end
@@ -1017,6 +1126,24 @@ class("ItemUsage")
 			end
 			
 		end
+	end
+	
+	function ItemUsage:isFleeing(target, range)
+		local pos = self.vp:GetPredictedPos(target, 0.26)
+		
+		if pos and GetDistanceSqr(pos) > range*range then
+			return true
+		end
+		return false
+	end
+	
+	function ItemUsage:Fleeing(target, range)
+		local pos = self.vp:GetPredictedPos(myHero, 0.26)
+		
+		if pos and GetDistanceSqr(pos, target) > range*range then
+			return true
+		end
+		return false
 	end
 	
 	function ItemUsage:GetSlotItemFromName(itemname)
@@ -1107,6 +1234,8 @@ class("Utilitys")
 				sourceClass = "Endless Engine"
 			elseif f == 3 then
 				sourceClass = "Endless Updater"
+			elseif f == 4 then
+				sourceClass = "Endless Activator"
 			elseif f == 10 then
 				sourceClass = "Endless Soraka"
 			elseif f == 99 then
@@ -1129,7 +1258,7 @@ class("Utilitys")
 class("AutoUpdate")
 	function AutoUpdate:__init()
 		self.autoUpdate = false
-		self.localVer = 1002
+		self.localVer = 1003
 		
 		self.srvAdr = "raw.githubusercontent.com"
 		self.scrAdr = "/azer0/0BoL/master/"
@@ -1183,7 +1312,7 @@ function OnLoad()
 	if not myUtilInstance or myUtilInstance.orbWalk == nil or myUtilInstance.orbWalk == "custom" then
 		myOrbWalk = OrbWalk()
 	end
-	myItemUsage = ItemUsage()
+	myItemUsage = ItemUsage(myUtilInstance)
 	
 	if myHero.charName == "Soraka" then
 		myInstanceChar = Soraka(myUtilInstance, myInstanceBase, myOrbWalk)
@@ -1216,6 +1345,7 @@ function OnTick()
 	if myItemUsage ~= nil then
 		myItemUsage:OnTick()
 		myItemUsage:SummonerTick()
+		myItemUsage:NewItemCheck()
 	end
 	if myInstanceBase ~= nil then
 		myInstanceBase:Update()
@@ -1230,4 +1360,8 @@ function OnDraw()
 		myInstanceBase:DrawingTowers()
 		myInstanceBase:OnDrawHPBarMinion()
 	end
+end
+
+function IsReady(spell)
+	return  (myHero:CanUseSpell(spell) == 0)
 end
