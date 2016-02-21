@@ -1,21 +1,12 @@
 if myHero.charName ~= "Soraka" then return end
 
 require "VPrediction"
---local vp = VPrediction()
 
 class("Soraka")
 	function Soraka:__init(util, base, orbwalk)
 		if myHero.charName ~= "Soraka" then
 			return
 		end
-		
-		--if FileExist(LIB_PATH .. "/HPrediction.lua") then
-		--	require "DivinePred"
-		--	self.dp = DivinePred()
-		--	self.dpQ = CircleSS(1500, 770, 110, 0.5, math.huge)
-		--else
-			--self.vp = VPrediction()
-		--end
 		
 		self.spellQ = { name = myHero:GetSpellData(_Q).name, range = 770, delay = 0.5, speed = 1500, width = 110 }
 		self.spellW = { name = myHero:GetSpellData(_W).name, range = 539, delay = 0.5, speed = 1000, width = 0, healing = { 70, 110, 150, 190, 230 }, extraAp = 35 }
@@ -156,9 +147,9 @@ class("Soraka")
 	function Soraka:OnTickOther()
 		self.castThisTick = false
 		
-		spellQC = (myHero:CanUseSpell(_Q) == 0)
+		--spellQC = (myHero:CanUseSpell(_Q) == 0)
 		spellWC = (myHero:CanUseSpell(_W) == 0)
-		spellEC = (myHero:CanUseSpell(_E) == 0)
+		--spellEC = (myHero:CanUseSpell(_E) == 0)
 		spellRC = (myHero:CanUseSpell(_R) == 0)
 		
 		myHpPerc = (myHero.health / myHero.maxHealth) * 100
@@ -168,43 +159,42 @@ class("Soraka")
 		passedWTarget = nil
 		passedRCondition = false
 		
-		if (spellWC and (self.menu.endlesssoraka.Heal or self.menu.carry.UseW) and not self.menu.w.UseW and myHpPerc > self.menu.w.HP and self.menu.endlesssoraka.Heal) and not self.castThisTick or (spellRC and not self.castThisTick and self.menu.endlesssoraka.Ult) then
+		if not self.castThisTick and ((spellWC and self.menu.endlesssoraka.Heal and self.menu.w.UseW and myHpPerc > self.menu.w.HP) or (spellRC and self.menu.endlesssoraka.Ult)) then
 			for i, target in pairs(GetAllyHeroes()) do
-				if target and not target.dead and myHero:GetDistance(target) < self.spellQ["range"] and self.menu.w["heal" .. target.charName] and self.menu.endlesssoraka.Heal then
-					tHpPerc = (target.health / target.maxHealth) * 100
-					if spellWC and tHpPerc < 85 then
-						passedWCondition = true
-						if passedWTarget ~= nil then
-							if passedWTarget.health > target.health then
-								passedWTarget = target
-							end
-						else
+				tHpPerc = (target.health / target.maxHealth) * 100
+				if target and spellWC and ValidTarget(target, self.spellW["range"]) and self.menu.w["heal" .. target.charName] and not target.isMe then
+					passedWCondition = true
+					if passedWTarget ~= nil then
+						if passedWTarget.health > target.health then
 							passedWTarget = target
 						end
+					else
+						passedWTarget = target
 					end
-					if spellRC and tHpPerc < 25 and self.menu.r["heal" .. target.charName] and self.menu.endlesssoraka.Ult then
-						eInRange = 0
-						for i, eHero in pairs(GetEnemyHeroes()) do
-							if eHero and not eHero.dead and target:GetDistance(eHero) < 400 then
-								eInRange = eInRange + 1
-							end
+				end
+				if target and spellRC and tHpPerc < 25 and self.menu.r["heal" .. target.charName] and self.menu.endlesssoraka.Ult then
+					eInRange = 0
+					for i, eHero in pairs(GetEnemyHeroes()) do
+						if eHero and not eHero.dead and target:GetDistance(eHero) < 600 then
+							eInRange = eInRange + 1
 						end
-						if eInRange > 0 then
-							passedRCondition = true
-						end
+					end
+					if eInRange > 0 then
+						passedRCondition = true
+						break
 					end
 				end
 			end
 			
-			if not self.castThisTick and passedWCondition and passedWTarget ~= nil and not passedWTarget.dead and myHero:GetDistance(passedWTarget) < self.spellQ["range"] and self.menu.endlesssoraka.Heal then
+			if passedWTarget ~= nil and passedWCondition and ValidTarget(passedWTarget, self.spellW["range"]) then
 				CastSpell(_W, passedWTarget)
 				self.castThisTick = true
 			end
-		end
-		
-		if spellRC and not self.castThisTick and self.menu.endlesssoraka.Ult and myHpPerc < 10 then
-			CastSpell(_W, passedWTarget)
-			self.castThisTick = true
+			
+			if passedRCondition and ValidTarget(passedWTarget, math.huge) then
+				CastSpell(_R)
+				self.castThisTick = true
+			end
 		end
 	end
 	
@@ -1000,7 +990,7 @@ class("ItemUsage")
 				if not potionslot and self.menu.UsePotionMiniRegen then
 					potionslot = self:GetSlotItemFromName("itemminiregenpotion")
 				end
-				if potionslot and myHero:CanUseSpell(potionslot) then
+				if potionslot and IsReady(potionslot) then
 					CastSpell(potionslot)
 					self.lastPotion = os.clock()
 				end
