@@ -1258,7 +1258,7 @@ class("Utilitys")
 class("AutoUpdate")
 	function AutoUpdate:__init()
 		self.autoUpdate = true
-		self.localVer = 1005
+		self.localVer = 1006
 		
 		self.srvAdr = "raw.githubusercontent.com"
 		self.scrAdr = "/azer0/0BoL/master/"
@@ -1277,7 +1277,7 @@ class("AutoUpdate")
 		if ServerVersionD then
 			ServerVersion = tonumber(ServerVersionD)
 			if ServerVersion then
-				if ServerVersion > tonumber(Version) then
+				if ServerVersion > tonumber(self.localVer) then
 					DownloadFile(self.addrFull, SCRIPT_PATH .. self.scrName .. ".lua", function ()
 						print("Endless Soraka updated, press 2x F9 to reload.")
 					end)
