@@ -1258,7 +1258,7 @@ class("Utilitys")
 class("AutoUpdate")
 	function AutoUpdate:__init()
 		self.autoUpdate = false
-		self.localVer = 1003
+		self.localVer = 1004
 		
 		self.srvAdr = "raw.githubusercontent.com"
 		self.scrAdr = "/azer0/0BoL/master/"
