@@ -110,7 +110,7 @@ function HarassMode()
 	if target and ValidTarget(target) then
 
 		--Q Logics
-		if myData.menu.HarassManager.Q and CanCastQ() and not myData.onWorkedGround then
+		if myData.menu.HarassManager.Qnew and myData.menu.HarassManager.Q and CanCastQ() and not myData.onWorkedGround then
 			local CastPosition, HitChance = VPred:GetLineCastPosition(target, 0.2, 130, 910, 1200, myHero, true)
 			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < 850 then
 				CastQ(CastPosition.x, CastPosition.z)
@@ -150,7 +150,7 @@ function HarassMode()
 		for _,v in pairs(GetEnemyHeroes()) do
 			if ValidTarget(v, 1000) then
 				--Q Logics
-				if myData.menu.HarassManager.Q and CanCastQ() and not myData.onWorkedGround then
+				if myData.menu.HarassManager.Qnew and myData.menu.HarassManager.Q and CanCastQ() and not myData.onWorkedGround then
 					local CastPosition, HitChance = VPred:GetLineCastPosition(v, 0.2, 130, 910, 1200, myHero, true)
 					if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < 850 then
 						CastQ(CastPosition.x, CastPosition.z)
@@ -292,6 +292,7 @@ function MakeMenu()
 		myData.menu.LaneClearManager:addParam("E", "Use E in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 	myData.menu:addSubMenu("-> Harass Manager <-", "HarassManager")
 		myData.menu.HarassManager:addParam("Q", "Use Q in Combo Mode", SCRIPT_PARAM_ONOFF, true)
+		myData.menu.HarassManager:addParam("Qnew", "Q New Ground", SCRIPT_PARAM_ONOFF, false)
 		myData.menu.HarassManager:addParam("W", "Use W in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.HarassManager:addParam("E", "Use E in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 end
@@ -311,7 +312,7 @@ end
 
 function OnLoad()
 	PrintPretty("Welcome to Rock Candy v" .. config.version, false, true)
-	PrintPretty("This is still a <b><u>work in progress</u></b> so please report any bugs you may find.", false, true)
+	PrintPretty("This is still a <b><u>work in progress</u></b> so please report any bugs you may find on the forum.", false, true)
 
 	myData.menu = scriptConfig(config.name, "001data")
 	MakeMenu()
@@ -391,19 +392,6 @@ function OnProcessSpell(object, spell)
 	end
 end
 
-function WorkedGroundIsKnown(obj)
-	for i, worked in pairs(myData.usedGround) do
-		if worked and worked.obje then
-			if worked.obje == obj then
-				return true
-			end
-		else
-			table.remove(myData.usedGround, i)
-		end
-	end
-	return false
-end
-
 --Orb Walker Section
 
 function OnLoadOrbWalk()
@@ -445,6 +433,21 @@ function GetOrbMode()
 		if _G.AutoCarry.Keys.MixedMode then return "Harass" end
 		if _G.AutoCarry.Keys.LaneClear then return "Laneclear" end
 		if _G.AutoCarry.Keys.LastHit then return "Lasthit" end
+	elseif myData.orbWalks.SELECTED == "PEWALK" then
+		if _G._Pewalk.GetActiveMode().Carry then return "Combo" end
+		if _G._Pewalk.GetActiveMode().Mixed then return "Harass" end
+		if _G._Pewalk.GetActiveMode().LaneClear then return "Laneclear" end
+		if _G._Pewalk.GetActiveMode().Farm then return "Lasthit" end
+	elseif myData.orbWalks.SELECTED == "NEBELWOLFI" then
+		if _G.NOWi.Config.k.Combo then return "Combo" end
+		if _G.NOWi.Config.k.Harass then return "Harass" end
+		if _G.NOWi.Config.k.LaneClear then return "Laneclear" end
+		if _G.NOWi.Config.k.LastHit then return "Lasthit" end
+	elseif myData.orbWalks.SELECTED == "SX" then
+		if _G.SxOrb.isFight then return "Combo" end
+		if _G.SxOrb.isHarass then return "Harass" end
+		if _G.SxOrb.isLaneClear then return "Laneclear" end
+		if _G.SxOrb.isLastHit then return "Lasthit" end
 	end
 end
 
@@ -494,6 +497,19 @@ function CountObjectsNearPos(pos, range, radius, objects)
         end
     end
     return n
+end
+
+function WorkedGroundIsKnown(obj)
+	for i, worked in pairs(myData.usedGround) do
+		if worked and worked.obje then
+			if worked.obje == obj then
+				return true
+			end
+		else
+			table.remove(myData.usedGround, i)
+		end
+	end
+	return false
 end
 
 --Spell Cast
