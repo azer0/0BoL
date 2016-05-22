@@ -8,11 +8,11 @@ require 'VPrediction'
 VPred = VPrediction()
 
 config = {
-	version = 1002,
+	version = 1003,
 	name = "Rock Candy",
 	charName = "Taliyah",
 	prettyName = "<font color=\"#FF5733\">[<u>Rock Candy</u>]</font>",
-	isDebug = true,
+	isDebug = false,
 
 	defaultFontColor = "3393FF",
 	debugFontColor = "EC33FF"
