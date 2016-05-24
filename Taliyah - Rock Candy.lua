@@ -14,11 +14,11 @@ require 'VPrediction'
 VPred = VPrediction()
 
 config = {
-	version = 1005,
+	version = 1004,
 	name = "Rock Candy",
 	charName = "Taliyah",
 	prettyName = "<font color=\"#FF5733\">[<u>Rock Candy</u>]</font>",
-	isDebug = false,
+	isDebug = true,
 
 	defaultFontColor = "3393FF",
 	debugFontColor = "EC33FF"
@@ -92,12 +92,30 @@ myData = {
 		}
 	},
 	targetSelector = nil,
-	minionSelector = nil
+	minionSelector = nil,
+	jungleSelector = nil,
+	myTarget = nil
 }
 
 --Champion Modes
+function CheckDashes()
+	if not CanCastE() then return end
+
+	for _, e in ipairs(GetEnemyHeroes()) do
+		if e and not e.dead and ValidTarget(e, myData.spells.E.range) and myData.menu.SpellManager.EManager[e.charName] then
+			local IsDashing, CanHit, Position = VPred:IsDashing(e, myData.spells.E.delay, myData.spells.E.width, 0.2, myHero)
+			if IsDashing and CanHit and GetDistance(Position) < myData.spells.E.range then
+				CastE(Position.x, Position.z)
+				PrintPretty("Countering dash from [" .. e .. "]", true, true)
+			end
+		end
+	end
+end
+
 function LaneClearMode()
 	myData.minionSelector:update()
+
+	if IsMyManaLowLaneClear() then return end
 
 	if myData.menu.LaneClearManager.E and CanCastE() then
 		local BestPos, BestHit = GetCircleAOEFarmPosition(570, 330)
@@ -124,12 +142,40 @@ function LaneClearMode()
 			end
 		end
 	end
+
+	JungleClearMode()
+end
+
+function JungleClearMode()
+	myData.jungleSelector:update()
+	for _, minions in ipairs(myData.jungleSelector.objects) do
+		if ValidTarget(minions) then
+			if myData.menu.LaneClearManager.Q and CanCastQ() and myData.onWorkedGround then
+				local CastPosition, HitChance = VPred:GetLineCastPosition(minions, myData.spells.Q.delay, myData.spells.Q.width, myData.spells.Q.range, myData.spells.Q.speed, myHero, myData.spells.Q.colide)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < 910 then
+					CastQ(CastPosition.x, CastPosition.z)
+				end
+			end
+
+			if myData.menu.LaneClearManager.W and CanCastW() then
+				local CastPosition, HitChance = VPred:GetCircularAOECastPosition(minions, myData.spells.W.delay, myData.spells.W.width, myData.spells.W.range, myData.spells.W.speed, myHero, myData.spells.W.colide)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < 910 then
+					CastW(CastPosition.x, CastPosition.z)
+					DelayAction(function() CastW2(myHero.x, myHero.z) end, .5)
+				end
+			end
+		end
+	end
 end
 
 function HarassMode()
 	myData.targetSelector:update()
 
+	myData.myTarget = nil
 	target = myData.targetSelector.target
+	myData.myTarget = target
+
+	if IsMyManaLowHarass() then return end
 
 	if target and ValidTarget(target) then
 
@@ -224,7 +270,11 @@ end
 function ComboMode()
 	myData.targetSelector:update()
 
+	myData.myTarget = nil
 	target = myData.targetSelector.target
+	myData.myTarget = target
+
+	if IsMyManaLowCombo() then return end
 
 	if target and ValidTarget(target) then
 
@@ -328,25 +378,36 @@ function MakeMenu()
 		myData.menu.ComboManager:addParam("Q", "Use Q in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.ComboManager:addParam("Qnew", "Q New Ground", SCRIPT_PARAM_ONOFF, false)
 		myData.menu.ComboManager:addParam("Qdirection", "Q Direction", SCRIPT_PARAM_LIST, 3, {"Push","Pull","Smart"})
-		myData.menu.ComboManager:addParam("Qmode", "Q Direction", SCRIPT_PARAM_LIST, 2, {"Always","Smart"})
+		myData.menu.ComboManager:addParam("Qmode", "Q Mode", SCRIPT_PARAM_LIST, 2, {"Always","Smart"})
 		myData.menu.ComboManager:addParam("W", "Use W in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.ComboManager:addParam("E", "Use E in Combo Mode", SCRIPT_PARAM_ONOFF, true)
+		myData.menu.ComboManager:addParam("mana", "Mana Manager", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
 	myData.menu:addSubMenu("-> Lane Clear Manager <-", "LaneClearManager")
 		myData.menu.LaneClearManager:addParam("Q", "Use Q in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.LaneClearManager:addParam("W", "Use W in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.LaneClearManager:addParam("E", "Use E in Combo Mode", SCRIPT_PARAM_ONOFF, true)
+		myData.menu.LaneClearManager:addParam("mana", "Mana Manager", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
 	myData.menu:addSubMenu("-> Harass Manager <-", "HarassManager")
 		myData.menu.HarassManager:addParam("Q", "Use Q in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.HarassManager:addParam("Qnew", "Q New Ground", SCRIPT_PARAM_ONOFF, false)
 		myData.menu.HarassManager:addParam("W", "Use W in Combo Mode", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.HarassManager:addParam("E", "Use E in Combo Mode", SCRIPT_PARAM_ONOFF, true)
+		myData.menu.HarassManager:addParam("mana", "Mana Manager", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
 	myData.menu:addSubMenu("-> Draw Manager <-", "DrawManager")
 		myData.menu.DrawManager:addParam("Q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.DrawManager:addParam("W", "Draw W Range", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.DrawManager:addParam("E", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.DrawManager:addParam("worked", "Notify when on worked ground", SCRIPT_PARAM_ONOFF, true)
 		myData.menu.DrawManager:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
+		myData.menu.DrawManager:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
 	myData.menu:addSubMenu("-> Spell Manager <-", "SpellManager")
+		myData.menu.SpellManager:addSubMenu("-> E Manager <-", "EManager")
+			for _,v in pairs(GetEnemyHeroes()) do
+				if v then
+					myData.menu.SpellManager.EManager:addParam(v.charName, "Check For Dash From " .. v.charName, SCRIPT_PARAM_ONOFF, true)
+				end
+			end
+
 end
 
 --On_____ Section
@@ -435,6 +496,7 @@ function OnLoad()
 
 	myData.targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, 930, DAMAGE_MAGIC, true)
 	myData.minionSelector = minionManager(MINION_ENEMY, 930, myHero, MINION_SORT_HEALTH_DES)
+	myData.jungleSelector = minionManager(MINION_JUNGLE, 930, myHero, MINION_SORT_MAXHEALTH_DEC)
 end
 
 function OnTick()
@@ -463,6 +525,8 @@ function OnTick()
 			table.remove(myData.myMines, i)
 		end
 	end
+
+	CheckDashes()
 
 	orbMode = GetOrbMode()
 
@@ -521,30 +585,58 @@ function OnProcessSpell(object, spell)
 				if mines and mines.pos and GetDistance(mines.pos, target.pos) < 15 then
 					myData.spells.W.readyForTwo = false
 					myData.spells.W.target = nil
+					PrintPretty("Nudging [" .. target.charName .. "] to [Mines].", true, true)
 					return
 				end
 			end
 
-			if target.health > myHero.health then
-				if myData.menu.ComboManager == 1 then
-					DelayAction(function() CastW2(myHero.x, myHero.z) PrintPretty("Pushing [" .. target.charName .. "] to [Me].", true, true) end, .4)
-				elseif myData.menu.ComboManager == 2 then
-					newPos = DoYouEvenExtend(myHero, target, 120)
-					DelayAction(function() CastW2(newPos.x, newPos.z) PrintPretty("Pushing [" .. target.charName .. "] [Calculated Push Away].", true, true) end, .4)
-				else
-					bestAlly = GetClosestAllyAboveHP(target, 120, target.health)
+			if myData.menu.ComboManager == 1 then
+				DelayAction(function() CastW2(myHero.x, myHero.z) PrintPretty("Pushing [" .. target.charName .. "] to [Me].", true, true) end, .4)
+			elseif myData.menu.ComboManager == 2 then
+				newPos = DoYouEvenExtend(myHero, target, 120)
+				DelayAction(function() CastW2(newPos.x, newPos.z) PrintPretty("Pushing [" .. target.charName .. "] [Calculated Push Away].", true, true) end, .4)
+			else
+				if target.health > myHero.health then
+					bestAlly = GetClosestAllyAboveHP(target, 240, target.health)
 					if bestAlly ~= nil and bestAlly:GetDistance(myHero) > myHero:GetDistance(target) then
 						DelayAction(function() CastW2(bestAlly.pos.x, bestAlly.pos.z) PrintPretty("Pushing [" .. target.charName .. "] to [" .. bestAlly.charName .. "].", true, true) end, .4)
 					else
 						newPos = DoYouEvenExtend(myHero, target, 120)
 						DelayAction(function() CastW2(newPos.x, newPos.z) PrintPretty("Pushing [" .. target.charName .. "] [Calculated Push Away].", true, true) end, .4)
 					end
-				end
-			else
-				if target and target.charName ~= nil then
-					DelayAction(function() CastW2(myHero.x, myHero.z) PrintPretty("Pulling [" .. target.charName .. "] to [Me].", true, true) end, .4)
+				else
+					if target and target.charName ~= nil then
+						DelayAction(function() if target.charName ~= nil then CastW2(myHero.x, myHero.z) PrintPretty("Pulling [" .. target.charName .. "] to [Me].", true, true) end end, .4)
+					else
+						myData.spells.W.target = nil
+						myData.spells.W.readyForTwo = false
+					end
 				end
 			end
+
+			--if target.health > myHero.health then
+			--	if myData.menu.ComboManager == 1 then
+			--		DelayAction(function() CastW2(myHero.x, myHero.z) PrintPretty("Pushing [" .. target.charName .. "] to [Me].", true, true) end, .4)
+			--	elseif myData.menu.ComboManager == 2 then
+			--		newPos = DoYouEvenExtend(myHero, target, 120)
+			--		DelayAction(function() CastW2(newPos.x, newPos.z) PrintPretty("Pushing [" .. target.charName .. "] [Calculated Push Away].", true, true) end, .4)
+			--	else
+			--		bestAlly = GetClosestAllyAboveHP(target, 120, target.health)
+			--		if bestAlly ~= nil and bestAlly:GetDistance(myHero) > myHero:GetDistance(target) then
+			--			DelayAction(function() CastW2(bestAlly.pos.x, bestAlly.pos.z) PrintPretty("Pushing [" .. target.charName .. "] to [" .. bestAlly.charName .. "].", true, true) end, .4)
+			--		else
+			--			newPos = DoYouEvenExtend(myHero, target, 120)
+			--			DelayAction(function() CastW2(newPos.x, newPos.z) PrintPretty("Pushing [" .. target.charName .. "] [Calculated Push Away].", true, true) end, .4)
+			--		end
+			--	end
+			--else
+			--	if target and target.charName ~= nil then
+			--		DelayAction(function() if target.charName ~= nil then CastW2(myHero.x, myHero.z) PrintPretty("Pulling [" .. target.charName .. "] to [Me].", true, true) end end, .4)
+			--	else
+			--		myData.spells.W.target = nil
+			--		myData.spells.W.readyForTwo = false
+			--	end
+			--end
 		end
 		myData.spells.W.target = nil
 	end
@@ -709,6 +801,30 @@ function GetClosestAllyAboveHP(target, maxRange, HP)
 	return nil
 end
 
+function IsMyManaLowCombo()
+    if myHero.mana < (myHero.maxMana * (myData.menu.ComboManager.mana / 100)) then
+        return true
+    else
+        return false
+    end
+end
+
+function IsMyManaLowLaneClear()
+    if myHero.mana < (myHero.maxMana * (myData.menu.LaneClearManager.mana / 100)) then
+        return true
+    else
+        return false
+    end
+end
+
+function IsMyManaLowHarass()
+    if myHero.mana < (myHero.maxMana * (myData.menu.HarassManager.mana / 100)) then
+        return true
+    else
+        return false
+    end
+end
+
 --Spell Cast
 function CastE(x, z)
 	myData.spells.E.lastCast = os.clock()
@@ -807,21 +923,5 @@ end
 --Updater
 
 function Update()
-	local UPDATE_HOST = "raw.github.com"
-	local UPDATE_PATH = "/azer0/0BoL/master/Taliyah - Rock Candy.lua".."?rand="..math.random(1,10000)
-	local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
-	local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
- 
-    local ServerData = GetWebResult(UPDATE_HOST, "/azer0/0BoL/master/Version/RockCandy.Version")
-	if ServerData then
-		ServerVersion = type(tonumber(ServerData)) == "number" and tonumber(ServerData) or nil
-		if ServerVersion then
-			if tonumber(config.version) < ServerVersion then
-				PrintPretty("Updating to ["..ServerVersion.."] please do NOT reload.", false, true)
-				DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..sversion.." => "..ServerVersion.."), press F9 twice to load the updated version.") end) end, 3)
-			end
-		end
-	else
-		PrintPretty("Error updating scrupt.", false, true)
-	end
+
 end
