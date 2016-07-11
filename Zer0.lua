@@ -5,6 +5,13 @@
 
 --HiranN - the skill shot data i reworked into my table
 
+--Change Log
+--Version 1642
+---Taliyah
+----Fixed some of the missing W logic
+----Added lane clear mode with support for Q,E. W will be soon
+----Fixed a typpo making E not cast
+
 require "VPrediction"
 
 --Config
@@ -12,7 +19,8 @@ _G.ZeroConfig = {
 	printEnemyDashes = true,
 	shouldWeDebug = true,
 	scriptName = "Zer0 Bundle",
-	menu = nil
+	menu = nil,
+	ZVersion = 1642
 }
 
 --DATA
@@ -551,7 +559,7 @@ local onWorkedGround = false
 local usedGround = {}
 class("ChampionTaliyah")
 function ChampionTaliyah:__init()
-	self.ver = 1001
+	self.ver = 1002
 
 	PrintPretty("Credits To: UndercoverRiotEmployee [Ideas]", true, false)
 
@@ -615,6 +623,9 @@ function ChampionTaliyah:__init()
 	_G.UPL:AddSpell(_E, { speed = 800, delay = math.huge, range = 570, width = 330, collision = false, aoe = true, type = "cone" })
 
 	self.ts = TargetSelector(TARGET_LESS_CAST, 910, DAMAGE_MAGIC, true)
+	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 910, DAMAGE_MAGIC, true)
+	self.jungleMinions = minionManager(MINION_JUNGLE, 910, myHero, MINION_SORT_MAXHEALTH_DEC)
+	self.enemyMinions = minionManager(MINION_ENEMY, 910, myHero, MINION_SORT_HEALTH_ASC)
 
 	self.spellManager = SpellMaster()
 
@@ -626,10 +637,6 @@ end
 
 function ChampionTaliyah:OnTick()
 	--print()
-	if not myHero or myHero.health < 1 or myHero.dead then
-		return
-	end
-
 	onWorkedGround = false
 	for i, worked in pairs(usedGround) do
 		if worked.expire <= os.clock() then
@@ -639,6 +646,9 @@ function ChampionTaliyah:OnTick()
 				onWorkedGround = true
 			end
 		end
+	end
+	if not myHero or myHero.health < 1 or myHero.dead then
+		return
 	end
 
 	self.ts:update()
@@ -656,7 +666,7 @@ function ChampionTaliyah:OnTick()
 	elseif UOL:GetOrbWalkMode() == "Harass" then
 		self:HarassMode()
 	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		
+		self:LaneClearMode()
 	elseif UOL:GetOrbWalkMode() == "LastHit" then
 		self:LastHitMode()
 	end
@@ -744,7 +754,6 @@ end
 
 function ChampionTaliyah:OnProcessSpell(object, spell)
 	if object == myHero and spell.name == "TaliyahW" and self.wTarget then
-		--lets find out whos in range
 		local targetsInRange = 0
 		local chosenTarget = nil
 		for _, e in ipairs(GetEnemyHeroes()) do
@@ -757,12 +766,20 @@ function ChampionTaliyah:OnProcessSpell(object, spell)
 				end
 			end
 		end
-		if chosenTarget == nil then
+		if chosenTarget == nil and self.wTarget then
 			DelayAction(function() self.spellManager:CastSpellPosition(self.wTarget.pos, _W) end, 2)
 			self.wTarget = nil
 		else
-			if chosenTarget.health > 0 and not chosenTarget.dead then
-				if chosenTarget.health > myHero.health and self.menu.combo.Waway then
+			if (chosenTarget.health > 0) and not chosenTarget.dead then
+				if (CountAllyInRange(800, myHero) > CountEnemyInRange(800, chosenTarget)) then
+					DelayAction(function() 
+						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 60)
+						if nEndPos then
+							self.spellManager:CastSpellPosition(nEndPos, _W)
+							self.wTarget = nil
+						end
+					end, 1.25)
+				elseif chosenTarget.health >= myHero.health and self.menu.combo.Waway then
 					DelayAction(function() 
 						nEndPos = DoYouEvenExtend(chosenTarget, myHero, 60)
 						if nEndPos then
@@ -801,9 +818,27 @@ function ChampionTaliyah:FleeMode()
 
 end
 
+function ChampionTaliyah:LaneClearMode()
+	self.enemyMinions:update()
+	if self.enemyMinions.target and self.enemyMinions.target.health > 0 and not self.enemyMinions.target.dead then
+		if self.spellManager:CanCast("Q") and self.menu.laneclear.Q and self.enemyMinions.target.health <= self:Damage("Q") and onWorkedGround then
+			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.enemyMinions.target)
+			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
+				self.spellManager:CastSpellPosition(castPosQ, _Q)
+			end
+		end
+	end
+
+	if self.spellManager:CanCast("W") and self.menu.laneclear.E then
+		bestPos, bestHit = GetFarmPosition(550, 250, self.enemyMinions.objects)
+		if bestPos and bestHit >= 3 and GetDistance(bestPos, myHero.pos) <=  550 then
+			self.spellManager:CastSpellPosition(bestPos, _E)
+		end
+	end
+end
+
 function ChampionTaliyah:ComboMode()
 	if self.ts.target == nil or self.ts.target:GetDistance(myHero) >= 910 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 910) then
-		--loop through team checks
 		return
 	end
 
@@ -824,7 +859,7 @@ function ChampionTaliyah:ComboMode()
 			comboText = comboText .. "E"
 		end
 
-		if self.ts.target.health + (self.ts.target.health * .05) < totalDamage then
+		if self.ts.target.health + (self.ts.target.health * .1) < totalDamage then
 			if comboText == "QW" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) then
 				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
 				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
@@ -862,7 +897,7 @@ function ChampionTaliyah:ComboMode()
 	if self.menu.combo.E and self.spellManager:CanCast("E") and GetDistance(myHero, self.ts.target) <= 570 then
 		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, "E")
+			self.spellManager:CastSpellPosition(castPosE, _E)
 			if self.menu.combo.W and self.spellManager:CanCast("W") and self.menu.combo.Wmine then
 				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
 				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
@@ -925,7 +960,7 @@ function ChampionTaliyah:HarassMode()
 		--check if we can w into it
 		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, "E")
+			self.spellManager:CastSpellPosition(castPosE, _E)
 			if self.menu.harass.W and self.spellManager:CanCast("W") and self.menu.harass.Wmine then
 				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
 				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
@@ -970,7 +1005,7 @@ function ChampionTaliyah:LastHitMode()
 		--check if we can w into it
 		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, "E")
+			self.spellManager:CastSpellPosition(castPosE, _E)
 			if self.menu.lasthit.W and self.spellManager:CanCast("W") and self.menu.lasthit.Wmine then
 				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
 				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
@@ -1043,16 +1078,18 @@ function OnCreateObj(obj)
 end
 
 function WorkedGroundIsKnown(obj)
-	for i, worked in pairs(usedGround) do
-		if worked and worked.obje then
-			if worked.obje == obj then
-				return true
+	if myHero.charName == "Taliyah" then
+		for i, worked in pairs(usedGround) do
+			if worked and worked.obje then
+				if worked.obje == obj then
+					return true
+				end
+			else
+				table.remove(usedGround, i)
 			end
-		else
-			table.remove(usedGround, i)
 		end
+		return false
 	end
-	return false
 end
 
 class("ChampionAhri")
@@ -3253,6 +3290,17 @@ function CountEnemyInRange(range, from)
 	if not range or not from then return 0 end
 	local inRange = 0
 	for _, e in ipairs(GetEnemyHeroes()) do
+		if e and e.health > 0 and not e.dead and from:GetDistance(e) <= range then
+			inRange = inRange + 1
+		end
+	end
+	return inRange
+end
+
+function CountAllyInRange(range, from)
+	if not range or not from then return 0 end
+	local inRange = 0
+	for _, e in ipairs(GetAllyHeroes()) do
 		if e and e.health > 0 and not e.dead and from:GetDistance(e) <= range then
 			inRange = inRange + 1
 		end
