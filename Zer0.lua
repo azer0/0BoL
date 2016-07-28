@@ -6,6 +6,14 @@
 --HiranN - the skill shot data i reworked into my table
 
 --Change Log
+--Version 1643
+---Ashe
+----Fixed a error with her Q and W hopefully, i had trouble re-producing it
+---Soraka
+----Fixed healing percent calculation
+----Adjusted Q skill shot data
+---Taliyah
+----Improved some logic, more to come
 --Version 1642
 ---Taliyah
 ----Fixed some of the missing W logic
@@ -17,10 +25,10 @@ require "VPrediction"
 --Config
 _G.ZeroConfig = {
 	printEnemyDashes = true,
-	shouldWeDebug = true,
+	shouldWeDebug = false,
 	scriptName = "Zer0 Bundle",
 	menu = nil,
-	ZVersion = 1642
+	ZVersion = 1643
 }
 
 --DATA
@@ -743,8 +751,10 @@ function ChampionTaliyah:OnDraw()
 				if dmgperc < 100 then
 					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
 				else
-					DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-					DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
+					if comboNeeded then
+						DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
+						DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
+					end
 				end
 				
 			end
@@ -866,6 +876,7 @@ function ChampionTaliyah:ComboMode()
 				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance) then
 					self.spellManager:CastSpellPosition(castPosQ, _Q)
 					self.spellManager:CastSpellPosition(castPosW, _W)
+					self.wTarget = self.ts.target
 				end
 			elseif comboText == "QE" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_E) then
 				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
@@ -880,6 +891,7 @@ function ChampionTaliyah:ComboMode()
 				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance) then
 					self.spellManager:CastSpellPosition(castPosW, _E)
 					self.spellManager:CastSpellPosition(castPosW, _W)
+					self.wTarget = self.ts.target
 				end
 			elseif comboText == "QWE" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_E) then
 				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
@@ -889,6 +901,7 @@ function ChampionTaliyah:ComboMode()
 					self.spellManager:CastSpellPosition(castPosQ, _Q)
 					self.spellManager:CastSpellPosition(castPosE, _E)
 					self.spellManager:CastSpellPosition(castPosW, _W)
+					self.wTarget = self.ts.target
 				end
 			end
 		end
@@ -1555,7 +1568,7 @@ function ChampionSoraka:__init()
 		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
 
 
-	_G.UPL:AddSpell(_Q, { speed = 1500, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
+	_G.UPL:AddSpell(_Q, { speed = 1600, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
 	_G.UPL:AddSpell(_E, { speed = 2000, delay = 0.6, range = 880, width = 25, collision = false, aoe = true, type = "circular" })
 
 	self.ts = TargetSelector(TARGET_LESS_CAST, 880, DAMAGE_MAGIC, true)
@@ -1601,20 +1614,20 @@ end
 
 function ChampionSoraka:OnTick()
 	self.ts:update()
-	self.autoKillTs:update()
-	self.jungleMinions:update()
-	self.enemyMinions:update()
+	--self.autoKillTs:update()
+	--self.jungleMinions:update()
+	--self.enemyMinions:update()
 
 	--self:KillSteal()
 
 	if (self.menu.w.W and self.spellManager:CanCast("W")) or (self.menu.r.R and self.spellManager:CanCast("R")) then
 		for _,h in ipairs(GetAllyHeroes()) do
 			if h and h.health > 0 and not h.dead then
-				if self.menu.w.W and self.spellManager:CanCast("W") and self.menu.w[h.charName] and self.menu.w[h.charName.."perc"] <= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.w[h.charName.."mana"] and GetDistance(h,myHero) <= 540 then
+				if self.menu.w.W and self.spellManager:CanCast("W") and self.menu.w[h.charName] and self.menu.w[h.charName.."perc"] >= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.w[h.charName.."mana"] and GetDistance(h,myHero) <= 540 then
 					self.spellManager:CastSpellTarget(h, _W)
 					break
 				end
-				if self.menu.r.R and self.spellManager:CanCast("R") and self.menu.r[h.charName] and self.menu.r[h.charName.."perc"] <= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.r[h.charName.."mana"] then
+				if self.menu.r.R and self.spellManager:CanCast("R") and self.menu.r[h.charName] and self.menu.r[h.charName.."perc"] >= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.r[h.charName.."mana"] then
 					self.spellManager:CastSpell(_R)
 					break
 				end
@@ -1853,7 +1866,6 @@ function ChampionAshe:ComboMode()
 	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
 		return
 	end
-
 	if self.spellManager:CanCast("R") and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Rmana and self.menu.combo.R and UnitIsFleeingMe(self.ts.target) and (self.ts.target.maxHealth / 2) > self.ts.target.health then
 		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.ts.target)
 		if castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and GetDistance(myHero.pos, castPosR) <= 15000 then
@@ -1869,7 +1881,7 @@ function ChampionAshe:ComboMode()
 	end
 
 	if self.spellManager:CanCast("Q") and self.menu.combo.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Qmana then
-		if GetDistance(self.ts.target.pos, myHero.pos) <= myHero.range then
+		if GetDistance(self.ts.target.pos, myHero.pos) <= myHero.range + 20 then
 			self.spellManager:CastSpell(_Q)
 		end
 	end
@@ -1948,15 +1960,15 @@ function ChampionAshe:Damage(spell)
 		spellLevel = GetSpellData(_Q).level
 		if spellLevel == 0 then return 0 end
 		levelDamage = {23,24,25,26,27}
-		myAdScale = myHero.ad * levelDamage[spellLevel]
-		damage = myHero.ad + myAdScale
+		myAdScale = myHero.damage * levelDamage[spellLevel]
+		damage = myHero.damage + myAdScale
 		return damage
 	elseif spell == "W" then
 		spellLevel = GetSpellData(_W).level
 		if spellLevel == 0 then return 0 end
 		levelDamage = {20,35,50,65,80}
 		myAdScale = levelDamage[spellLevel]
-		damage = myHero.ad + myAdScale
+		damage = myHero.damage + myAdScale
 		return damage
 	elseif spell == "E" then
 		return 0
@@ -2291,7 +2303,7 @@ end
 
 class("ChampionLux")
 function ChampionLux:__init()
-	self.ver = 1003
+	self.ver = 1004
 
 	--PrintPretty("Loaded Lux [v" .. self.ver .. "]", true, false)
 
@@ -2303,21 +2315,29 @@ function ChampionLux:__init()
 
 	self.menu:addSubMenu("-> Combo Logic <-", "combo")
 		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		self.menu.combo:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 		self.menu.combo:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
+		self.menu.combo:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 		self.menu.combo:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
 		self.menu.combo:addParam("Ignite", "Use Ignite", SCRIPT_PARAM_ONOFF, true)
 
 	self.menu:addSubMenu("-> Harass Logic <-", "harass")
 		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		self.menu.harass:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 		self.menu.harass:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
+		self.menu.harass:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 
 	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
 		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
+		self.menu.lasthit:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 		self.menu.lasthit:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
+		self.menu.lasthit:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 
 	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
 		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		self.menu.laneclear:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 		self.menu.laneclear:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
+		self.menu.laneclear:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
 
 	self.menu:addSubMenu("-> R Settings <-", "r")
 		self.menu.r:addParam("r", "Enabled", SCRIPT_PARAM_ONOFF, true)
@@ -2455,14 +2475,14 @@ function ChampionLux:ComboMode()
 		return
 	end
 
-	if self.E and self.menu.combo.E then
+	if self.E and self.menu.combo.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.combo.Emana then
 		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
 			self.spellManager:CastSpellPosition(castPosE, _E)
 		end
 	end
 
-	if self.Q and self.menu.combo.Q then
+	if self.Q and self.menu.combo.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.combo.Qmana then
 		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
 		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
 			self.spellManager:CastSpellPosition(castPosQ, _Q)
@@ -2482,14 +2502,14 @@ function ChampionLux:HarassMode()
 		return
 	end
 
-	if self.E and self.menu.harass.E then
+	if self.E and self.menu.harass.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.harass.Emana then
 		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
 			self.spellManager:CastSpellPosition(castPosE, _E)
 		end
 	end
 
-	if self.Q and self.menu.harass.Q then
+	if self.Q and self.menu.harass.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.harass.Qmana then
 		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
 		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
 			self.spellManager:CastSpellPosition(castPosQ, _Q)
@@ -2502,14 +2522,14 @@ function ChampionLux:LastHitMode()
 		return
 	end
 
-	if self.E and self.menu.lasthit.E then
+	if self.E and self.menu.lasthit.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.lasthit.Emana then
 		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
 		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
 			self.spellManager:CastSpellPosition(castPosE, _E)
 		end
 	end
 
-	if self.Q and self.menu.lasthit.Q then
+	if self.Q and self.menu.lasthit.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.lasthit.Qmana then
 		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
 		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
 			self.spellManager:CastSpellPosition(castPosQ, _Q)
@@ -2518,7 +2538,7 @@ function ChampionLux:LastHitMode()
 end
 
 function ChampionLux:LaneClearMode()
-	if self.E and self.menu.laneclear.E then
+	if self.E and self.menu.laneclear.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.laneclear.Emana then
 		bestPos, bestHit = GetFarmPosition(1075, 320, self.enemyMinions.objects)
 		if bestPos and bestHit >= 3 and GetDistance(bestPos, myHero.pos) <=  1075 then
 			self.spellManager:CastSpellPosition(bestPos, _E)
@@ -2807,7 +2827,7 @@ function SpellMaster:CastSpellPosition(position, spell)
 end
 
 function SpellMaster:CastSpellTarget(target, spell)
-	if position ~= nil and spell ~= nil then
+	if target ~= nil and spell ~= nil then
 		if spell == _Q then
 			self.spells.Q.lastCast = os.clock()
 			self.spells.Q.ready = false
