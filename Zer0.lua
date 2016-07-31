@@ -33,27 +33,11 @@ _G.ZeroConfig = {
 	menu = nil,
 	ZVersion = 1644,
 	autoUpdate = true,
-	updateHost = "raw.github.com",
+	updateHost = "raw.githubusercontent.com",
 	updatePath = "/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000),
 	updateFilePath = SCRIPT_PATH..GetCurrentEnv().FILE_NAME,
-	updateURL = "https://"..UPDATE_HOST..UPDATE_PATH
+	updateURL = "https://raw.githubusercontent.com/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000)
 }
-
-if _G.ZeroConfig.autoUpdate then
-	local ServerData = GetWebResult(_G.ZeroConfig.updateHost, "/azer0/0BoL/master/Version/Zer0.version")
-	if ServerData then
-		ServerVersion = type(tonumber(ServerData)) == "number" and tonumber(ServerData) or nil
-		if ServerVersion then
-			if tonumber(_G.ZeroConfig.ZVersion) < ServerVersion then
-				print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Update available, version: " .. ServerVersion .. ".</font>")
-				print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Please do not press F9 until update has been completed.</font>")
-				DelayAction(function() DownloadFile(_G.ZeroConfig.updateURL, _G.ZeroConfig.updateFilePath, function () print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Updated! Old Version: ".. _G.ZeroConfig.ZVersion .." => New Version: "..ServerVersion..", please press F9 two times.") end) end, 3)
-			end
-		end
-	else
-		print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Error downloading remote information.</font>")
-	end
-end
 
 --DATA
 _G.DataStore = {
@@ -3516,6 +3500,23 @@ end
 
 function OnLoad()
 	PrintPretty("Zer0 Bundle Loading....", false, true)
+
+	if _G.ZeroConfig.autoUpdate then
+		local ServerData = GetWebResult(_G.ZeroConfig.updateHost, "/azer0/0BoL/master/Version/Zer0.Version")
+		if ServerData then
+			ServerVersion = type(tonumber(ServerData)) == "number" and tonumber(ServerData) or nil
+			if ServerVersion then
+				print("Current: " .. _G.ZeroConfig.ZVersion .. " - Server: " .. ServerVersion)
+				if tonumber(_G.ZeroConfig.ZVersion) < ServerVersion then
+					print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Update available, version: " .. ServerVersion .. ".</font>")
+					print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Please do not press F9 until update has been completed.</font>")
+					DelayAction(function() DownloadFile(_G.ZeroConfig.updateURL, _G.ZeroConfig.updateFilePath, function () print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Updated! Old Version: ".. _G.ZeroConfig.ZVersion .." => New Version: "..ServerVersion..", please press F9 two times.") end) end, 3)
+				end
+			end
+		else
+			print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Error downloading remote information.</font>")
+		end
+	end
 
 	_G.DataStore.ChampionL = ChampionLoader()
 
