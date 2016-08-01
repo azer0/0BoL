@@ -31,7 +31,7 @@ _G.ZeroConfig = {
 	shouldWeDebug = false,
 	scriptName = "Zer0 Bundle",
 	menu = nil,
-	ZVersion = 1644,
+	ZVersion = 1645,
 	autoUpdate = true,
 	updateHost = "raw.githubusercontent.com",
 	updatePath = "/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000),
@@ -575,7 +575,7 @@ local onWorkedGround = false
 local usedGround = {}
 class("ChampionTaliyah")
 function ChampionTaliyah:__init()
-	self.ver = 1002
+	self.ver = 1003
 
 	PrintPretty("Credits To: UndercoverRiotEmployee and Royalsaint [Ideas]", true, false)
 
@@ -652,7 +652,6 @@ function ChampionTaliyah:__init()
 end
 
 function ChampionTaliyah:OnTick()
-	--print()
 	onWorkedGround = false
 	for i, worked in pairs(usedGround) do
 		if worked.expire <= os.clock() then
@@ -669,14 +668,11 @@ function ChampionTaliyah:OnTick()
 
 	self.ts:update()
 
-
-	--check for flee mode, use E behind us to slow enemys use W if they are not up our ass
 	if self.menu.keys.flee then
 		self:FleeMode()
 		return
 	end
 
-	--check mode, combo, lane clear, harass, last hit
 	if UOL:GetOrbWalkMode() == "Combo" then
 		self:ComboMode()
 	elseif UOL:GetOrbWalkMode() == "Harass" then
@@ -789,9 +785,9 @@ function ChampionTaliyah:OnProcessSpell(object, spell)
 			self.wTarget = nil
 		else
 			if (chosenTarget.health > 0) and not chosenTarget.dead then
-				if (CountAllyInRange(800, myHero) > CountEnemyInRange(800, chosenTarget)) then
+				if (CountAllyInRange(800, myHero) > CountEnemyInRange(800, chosenTarget)) or (CountAllyInRange(800, myHero) > CountEnemyInRange(950, myHero)) then
 					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 60)
+						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 80)
 						if nEndPos then
 							self.spellManager:CastSpellPosition(nEndPos, _W)
 							self.wTarget = nil
@@ -799,7 +795,7 @@ function ChampionTaliyah:OnProcessSpell(object, spell)
 					end, 1.25)
 				elseif chosenTarget.health >= myHero.health and self.menu.combo.Waway then
 					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(chosenTarget, myHero, 60)
+						nEndPos = DoYouEvenExtend(chosenTarget, myHero, 80)
 						if nEndPos then
 							self.spellManager:CastSpellPosition(nEndPos, _W)
 							self.wTarget = nil
@@ -808,7 +804,7 @@ function ChampionTaliyah:OnProcessSpell(object, spell)
 					PrintPretty("Casting [W2] on " .. chosenTarget.charName .. " to [Push].", true, true)
 				elseif chosenTarget.health < myHero.health and self.menu.combo.Wtoward then
 					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 60)
+						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 80)
 						if nEndPos then
 							self.spellManager:CastSpellPosition(nEndPos, _W)
 							self.wTarget = nil
