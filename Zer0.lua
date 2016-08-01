@@ -25,7 +25,6 @@ TrackerLoad("lhjPspIzCO7cXUBi")
 
 require "VPrediction"
 
---Config
 _G.ZeroConfig = {
 	printEnemyDashes = true,
 	shouldWeDebug = false,
@@ -39,7 +38,6 @@ _G.ZeroConfig = {
 	updateURL = "https://raw.githubusercontent.com/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000)
 }
 
---DATA
 _G.DataStore = {
 	ChampionL = nil,
 	Champion = nil
@@ -1582,7 +1580,6 @@ function ChampionSoraka:__init()
 
 	self.spellManager = SpellMaster()
 
-	--AddDrawCallback(function() self:OnDraw() end)
 	AddTickCallback(function() self:OnTick() end)
 	AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
 end
@@ -1618,11 +1615,6 @@ end
 
 function ChampionSoraka:OnTick()
 	self.ts:update()
-	--self.autoKillTs:update()
-	--self.jungleMinions:update()
-	--self.enemyMinions:update()
-
-	--self:KillSteal()
 
 	if (self.menu.w.W and self.spellManager:CanCast("W")) or (self.menu.r.R and self.spellManager:CanCast("R")) then
 		for _,h in ipairs(GetAllyHeroes()) do
@@ -3101,11 +3093,6 @@ function Activator:SmiteDmg()
 end
 
 function Activator:Tick()
-	--Potion checks
-	--if (self.lastPotion == 0) or (os.clock() - self.lastPotion < self.potTime) then
-
-	--end
-
 	--self checks
 	if self.summoners.heal and _G.ZeroConfig.menu.activate.heal.Heal and ((myHero.health + myHero.shield) * 100 / myHero.maxHealth) <= _G.ZeroConfig.menu.activate.heal.MyHealth and myHero:CanUseSpell(self.summoners.heal) then
 		CastSpell(self.summoners.heal, myHero)
