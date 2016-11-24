@@ -6,7 +6,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 17
+	Version = 18
 }
 
 --[[
@@ -132,6 +132,8 @@ function CheckForUpdates()
 				AutoUpdaterPrint("New update found [v" .. sVer .. "].")
 				AutoUpdaterPrint("Please do not reload until complete.")
 				DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..ServerVersion.."), press F9 twice to use the updated version.") end)
+			else
+				AutoUpdaterPrint("No update needed, your using the latest version.")
 			end
 		end
 	end
