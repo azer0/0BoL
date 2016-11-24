@@ -122,21 +122,26 @@ function AutoUpdaterPrint(msg)
 	print("<font color=\"#FF794C\"><b>0 Cassiopeia</b></font> <font color=\"#FFDFBF\"><b>"..msg.."</b></font>")
 end
 
-function CheckForUpdates()
-	if _G.zeroConfig.UseUpdater then
-		local sData = GetWebResult(UpdateHost, UpdatePath)
-		if sData then
-			local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
-			if sVer and sVer > scriptData.Version then
-				sVer = tonumber(sVer)
-				AutoUpdaterPrint("New update found [v" .. sVer .. "].")
-				AutoUpdaterPrint("Please do not reload until complete.")
-				DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..ServerVersion.."), press F9 twice to use the updated version.") end)
-			else
-				AutoUpdaterPrint("No update needed, your using the latest version.")
-			end
+local hasBeenUpdated = false
+
+if _G.zeroConfig.UseUpdater then
+	local sData = GetWebResult(UpdateHost, UpdatePath)
+	if sData then
+		local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
+		if sVer and sVer > scriptData.Version then
+			sVer = tonumber(sVer)
+			AutoUpdaterPrint("New update found [v" .. sVer .. "].")
+			AutoUpdaterPrint("Please do not reload until complete.")
+			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..ServerVersion.."), press F9 twice to use the updated version.") end)
+			hasBeenUpdated = true
+		else
+			AutoUpdaterPrint("No update needed, your using the latest version.")
 		end
 	end
+end
+
+if hasBeenUpdated then
+	return
 end
 
 --
