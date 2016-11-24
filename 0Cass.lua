@@ -132,7 +132,7 @@ if _G.zeroConfig.UseUpdater then
 			sVer = tonumber(sVer)
 			AutoUpdaterPrint("New update found [v" .. sVer .. "].")
 			AutoUpdaterPrint("Please do not reload until complete.")
-			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..ServerVersion.."), press F9 twice to use the updated version.") end)
+			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. (" .. scriptData.Version .. " => " .. sVer .. "), press F9 twice to use the updated version.") end)
 			hasBeenUpdated = true
 		else
 			AutoUpdaterPrint("No update needed, your using the latest version.")
