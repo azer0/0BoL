@@ -1,3 +1,14 @@
+if myHero.charName ~= "Cassiopeia" then return end
+
+--[[
+v19
+-Fixed VPred hit chance from hard coded versions
+-Added W to Harass Mode for target
+-Added BoL Tools tracker
+-Added # of enemys hit to use R to combo menu
+-Added R Pred chance to advanced menu
+]]--
+
 _G.zeroConfig = {
 	UseUpdater = true,
 	AutoDownload = true,
@@ -6,7 +17,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 18
+	Version = 19
 }
 
 --[[
@@ -289,6 +300,7 @@ function RegisterMenu()
 			mainMenu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Combo:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Combo:addParam("r", "Use R", SCRIPT_PARAM_ONOFF, true)
+			mainMenu.Combo:addParam("rNumber", "Use R When X Hit", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Combo:addParam("items", "Use Items", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Combo:addParam("ignite", "Use Ignite", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Combo:addParam("key", "Combo Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey(" "))
@@ -296,6 +308,7 @@ function RegisterMenu()
 		mainMenu:addSubMenu(">> Lane Clear Settings <<", "Lane")
 			mainMenu.Lane:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Lane:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+			mainMenu.Lane:addParam("qMinions", "Use Q on X Minions Hit", SCRIPT_PARAM_SLICE, 3, 0, 6, 0)
 			mainMenu.Lane:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Lane:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
 			mainMenu.Lane:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
@@ -353,21 +366,29 @@ function RegisterMenu()
 				[2] = "HPrediction",
 				[3] = "FH Prediction"
 			})
-			mainMenu.Advanced:addParam("qMinionVPHC", "W Hit Chance Minion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
+			mainMenu.Advanced:addParam("wMinionVPHC", "W Hit Chance Minion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
 			
-			mainMenu.Advanced:addParam("qChampsPred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+			mainMenu.Advanced:addParam("wChampsPred", "Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
 				[3] = "FH Prediction"
 			})
-			mainMenu.Advanced:addParam("qChampsVPHC", "W Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
+			
+			mainMenu.Advanced:addParam("wChampsVPHC", "W Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+			
+			mainMenu.Advanced:addParam("rChampsPred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+				[1] = "VPrediction",
+				[2] = "HPrediction",
+				[3] = "FH Prediction"
+			})
+			mainMenu.Advanced:addParam("rChampsVPHC", "R Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
+			mainMenu.Advanced:addParam("emptySpace4", "", SCRIPT_PARAM_INFO, "")
 			
 			mainMenu.Advanced:addParam("autoE", "Auto Last Hit (E)", SCRIPT_PARAM_ONOFF, true)
 		
 		mainMenu:addSubMenu(">> Draw Settings <<", "Draw")
-			mainMenu.Draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
 				
 		
@@ -737,7 +758,7 @@ function JungleTick()
 		if object then
 			if mainMenu.Jungle.q and myHero:CanUseSpell(_Q) == READY and GetDistance(object) <= MyChampData["Q"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 2 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qMinionVPHC then
 					CastSpell(_Q, CastPosition.x, CastPosition.z)
 					return
 				end
@@ -745,13 +766,13 @@ function JungleTick()
 			
 			if mainMenu.Jungle.w and myHero:CanUseSpell(_W) == READY and GetDistance(object) <= MyChampData["W"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 3 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wMinionVPHC then
 					CastSpell(_W, CastPosition.x, CastPosition.z)
 					return
 				end
 			end
 			
-			if mainMenu.Jungle.e and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(object) <= MyChampData["E"].range - 5 then
+			if mainMenu.Jungle.e and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(object) <= MyChampData["E"].range then
 				CastSpell(_E, object)
 				return
 			end
@@ -770,7 +791,7 @@ function LaneClearTick()
 	
 	if mainMenu.Lane.q and mainMenu.Lane.qMana <= 100*myHero.mana/myHero.maxMana then
 		local BestPos, BestHit = GetFarmPosition(MyChampData["Q"].range, MyChampData["Q"].width)
-		if BestHit > 1 then 
+		if BestHit > mainMenu.Lane.qMinions then 
 			CastSpell(_Q, BestPos.x, BestPos.z)
 		end
 	end
@@ -808,39 +829,15 @@ end
 --
 function ComboTick()
 	ts:update()
-	myTarget = ts.target
-	local castOnTarget = false
-	if myTarget then
-		if mainMenu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= MyChampData["Q"].range then
-			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-			if HitChance and CastPosition and HitChance >= 2 then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-				castOnTarget = true
-			end
-		end
-		
-		if mainMenu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= MyChampData["W"].range then
-			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-			if HitChance and CastPosition and HitChance >= 2 then
-				CastSpell(_W, CastPosition.x, CastPosition.z)
-				castOnTarget = true
-			end
-		end
-		
-		if mainMenu.Combo.e and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= MyChampData["E"].range - 5 then
-			CastSpell(_E, myTarget)
-			castOnTarget = true
-		end
-	end
 	
 	if mainMenu.Combo.r and myHero:CanUseSpell(_R) == READY then
 		local bestCast = nil
 		local bestHitChance = nil
 		local bestHitCount = nil
 		for i, object in pairs(GetEnemyHeroes()) do
-			if object and ValidTargetT(object, MyChampData["R"].range) then
+			if object and ValidTargetedT(object, MyChampData["R"].range) then
 				local CastPosition, HitChance, NumHit = VP:GetConeAOECastPosition(object, MyChampData["R"].delay, MyChampData["R"].width, MyChampData["R"].range, MyChampData["R"].speed, myHero)
-				if CastPosition and HitChance and NumHit and GetDistance(CastPosition) <= MyChampData["R"].range and HitChance >= 3 and NumHit > 1 then
+				if CastPosition and HitChance and NumHit and GetDistance(CastPosition) <= MyChampData["R"].range and HitChance >= mainMenu.Advanced.rChampsVPHC and NumHit >= mainMenu.Combo.rNumber then
 					if bestCast == nil then
 						bestCast = CastPosition
 						bestHitChance = HitChance
@@ -864,13 +861,38 @@ function ComboTick()
 		end
 	end
 	
+	myTarget = ts.target
+	local castOnTarget = false
+	if myTarget then
+		if mainMenu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= MyChampData["Q"].range then
+			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
+			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+				castOnTarget = true
+			end
+		end
+		
+		if mainMenu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= MyChampData["W"].range then
+			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred and GetDistance(CastPosition) >= 495 then
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+				castOnTarget = true
+			end
+		end
+		
+		if mainMenu.Combo.e and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= MyChampData["E"].range then
+			CastSpell(_E, myTarget)
+			castOnTarget = true
+		end
+	end
+	
 	if castOnTarget then return end
 	
 	for i, object in pairs(GetEnemyHeroes()) do
 		if object and object.valid and not object.dead and object.visible and object.bTargetable then
 			if mainMenu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(object) <= MyChampData["Q"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 2 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
 					CastSpell(_Q, CastPosition.x, CastPosition.z)
 					castOnTarget = true
 				end
@@ -878,7 +900,7 @@ function ComboTick()
 		
 			if mainMenu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(object) <= MyChampData["W"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 3 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
 					CastSpell(_W, CastPosition.x, CastPosition.z)
 					castOnTarget = true
 				end
@@ -903,16 +925,19 @@ function HarassTick()
 	if myTarget then
 		if mainMenu.Harass.q and mainMenu.Harass.qMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= MyChampData["Q"].range then
 			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-			if HitChance and CastPosition and HitChance >= 2 then
+			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 				return
 			end
 		end
 		
-		--if mainMenu.Harass.e and mainMenu.Harass.eMana <= 100*myHero.mana/myHero.maxMana and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= MyChampData["E"].range - 5 then
-		--	CastSpell(_E, myTarget)
-		--	return
-		--end
+		if mainMenu.Harass.w and mainMenu.Harass.wMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= MyChampData["W"].range then
+			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+				return
+			end
+		end
 	end
 	
 	if castOnTarget then return end
@@ -921,7 +946,7 @@ function HarassTick()
 		if object and object.valid and not object.dead and object.visible and object.bTargetable then
 			if mainMenu.Harass.q and mainMenu.Harass.qMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_Q) == READY and GetDistance(object) <= MyChampData["Q"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 2 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
 					CastSpell(_Q, CastPosition.x, CastPosition.z)
 					return
 				end
@@ -929,16 +954,11 @@ function HarassTick()
 		
 			if mainMenu.Harass.w and mainMenu.Harass.wMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_W) == READY and GetDistance(object) <= MyChampData["W"].range then
 				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 3 then
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
 					CastSpell(_W, CastPosition.x, CastPosition.z)
 					return
 				end
 			end
-			
-			--if mainMenu.Harass.e and mainMenu.Harass.eMana <= 100*myHero.mana/myHero.maxMana and CanWeEYet() and myHero:CanUseSpell(_E) == READY and GetDistance(object) <= MyChampData["E"].range - 5 then
-			--	CastSpell(_E, object)
-			--	return
-			--end
 		end
 	end
 end
