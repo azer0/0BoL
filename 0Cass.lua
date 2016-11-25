@@ -1,6 +1,8 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v20
+-Added W to Lane Clear mode
 v19
 -Fixed VPred hit chance from hard coded versions
 -Added W to Harass Mode for target
@@ -17,7 +19,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 19
+	Version = 20
 }
 
 --[[
@@ -308,9 +310,10 @@ function RegisterMenu()
 		mainMenu:addSubMenu(">> Lane Clear Settings <<", "Lane")
 			mainMenu.Lane:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Lane:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
-			mainMenu.Lane:addParam("qMinions", "Use Q on X Minions Hit", SCRIPT_PARAM_SLICE, 3, 0, 6, 0)
+			mainMenu.Lane:addParam("qMinions", "Use Q on X Minions Hit", SCRIPT_PARAM_SLICE, 3, 1, 6, 0)
 			mainMenu.Lane:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Lane:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+			mainMenu.Lane:addParam("wMinions", "Use W on X Minions Hit", SCRIPT_PARAM_SLICE, 3, 1, 6, 0)
 			mainMenu.Lane:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Lane:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
 			mainMenu.Lane:addParam("eMode", "E Mode", SCRIPT_PARAM_LIST, 1, {
@@ -791,8 +794,15 @@ function LaneClearTick()
 	
 	if mainMenu.Lane.q and mainMenu.Lane.qMana <= 100*myHero.mana/myHero.maxMana then
 		local BestPos, BestHit = GetFarmPosition(MyChampData["Q"].range, MyChampData["Q"].width)
-		if BestHit > mainMenu.Lane.qMinions then 
+		if BestHit >= mainMenu.Lane.qMinions then 
 			CastSpell(_Q, BestPos.x, BestPos.z)
+		end
+	end
+	
+	if mainMenu.Lane.w and mainMenu.Lane.wMana <= 100*myHero.mana/myHero.maxMana then
+		local BestPos, BestHit = GetFarmPosition(MyChampData["W"].range, MyChampData["W"].width)
+		if BestHit >= mainMenu.Lane.wMinions and GetDistance(BestPos) >= 500 then 
+			CastSpell(_W, BestPos.x, BestPos.z)
 		end
 	end
 	
