@@ -1,6 +1,8 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v21
+-Fixed a error in the target selector
 v20
 -Added W to Lane Clear mode
 v19
@@ -410,7 +412,7 @@ end
 local jungleMinions = minionManager(MINION_JUNGLE, 900, myHero, MINION_SORT_MAXHEALTH_DEC)
 local wallJumpJungleMinions = minionManager(MINION_JUNGLE, 900, myHero, MINION_SORT_MAXHEALTH_DEC)
 local closeEnemyMinions = minionManager(MINION_ENEMY, 900, myHero, MINION_SORT_MAXHEALTH_DEC)
-local ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 900, DAMAGE_PHYSICAL, true)
+local ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 900, DAMAGE_MAGIC, true)
 ts.name = "Cassiopeia"
 
 local JungleMobs = {}
