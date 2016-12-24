@@ -21,10 +21,10 @@ if _G.zeroConfig.UseUpdater then
 	local sData = GetWebResult(UpdateHost, UpdatePath)
 	if sData then
 		local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
-		if sVer and sVer > scriptData.Version then
+		if sVer and sVer > _G.zeroConfig.Version then
 			AutoUpdaterPrint("New update found [v" .. sVer .. "].")
 			AutoUpdaterPrint("Please do not reload until complete.")
-			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
+			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. (".._G.zeroConfig.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
 			hasBeenUpdated = true
 		else
 			AutoUpdaterPrint("No update needed, your using the latest version.")
