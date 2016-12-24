@@ -1,3322 +1,525 @@
---Credits:
---Taliyah
----0x3A for the Taliyah worked ground tracking idea
----UndercoverRiotEmployee for ideas
-
---HiranN - the skill shot data i reworked into my table
-
---Change Log
---Version 1643
----Ashe
-----Fixed a error with her Q and W hopefully, i had trouble re-producing it
----Soraka
-----Fixed healing percent calculation
-----Adjusted Q skill shot data
----Taliyah
-----Improved some logic, more to come
---Version 1642
----Taliyah
-----Fixed some of the missing W logic
-----Added lane clear mode with support for Q,E. W will be soon
-----Fixed a typpo making E not cast
-
-assert(load(Base64Decode("G0x1YVIAAQQEBAgAGZMNChoKAAAAAAAAAAAAAQQfAAAAAwAAAEQAAACGAEAA5QAAAJ1AAAGGQEAA5UAAAJ1AAAGlgAAACIAAgaXAAAAIgICBhgBBAOUAAQCdQAABhkBBAMGAAQCdQAABhoBBAOVAAQCKwICDhoBBAOWAAQCKwACEhoBBAOXAAQCKwICEhoBBAOUAAgCKwACFHwCAAAsAAAAEEgAAAEFkZFVubG9hZENhbGxiYWNrAAQUAAAAQWRkQnVnc3BsYXRDYWxsYmFjawAEDAAAAFRyYWNrZXJMb2FkAAQNAAAAQm9sVG9vbHNUaW1lAAQQAAAAQWRkVGlja0NhbGxiYWNrAAQGAAAAY2xhc3MABA4AAABTY3JpcHRUcmFja2VyAAQHAAAAX19pbml0AAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAoAAABzZW5kRGF0YXMABAsAAABHZXRXZWJQYWdlAAkAAAACAAAAAwAAAAAAAwkAAAAFAAAAGABAABcAAIAfAIAABQAAAAxAQACBgAAAHUCAAR8AgAADAAAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAcAAAB1bmxvYWQAAAAAAAEAAAABAQAAAAAAAAAAAAAAAAAAAAAEAAAABQAAAAAAAwkAAAAFAAAAGABAABcAAIAfAIAABQAAAAxAQACBgAAAHUCAAR8AgAADAAAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAkAAABidWdzcGxhdAAAAAAAAQAAAAEBAAAAAAAAAAAAAAAAAAAAAAUAAAAHAAAAAQAEDQAAAEYAwACAAAAAXYAAAUkAAABFAAAATEDAAMGAAABdQIABRsDAAKUAAADBAAEAXUCAAR8AgAAFAAAABA4AAABTY3JpcHRUcmFja2VyAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAUAAABsb2FkAAQMAAAARGVsYXlBY3Rpb24AAwAAAAAAQHpAAQAAAAYAAAAHAAAAAAADBQAAAAUAAAAMAEAAgUAAAB1AgAEfAIAAAgAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAgAAAB3b3JraW5nAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAEBAAAAAAAAAAAAAAAAAAAAAAAACAAAAA0AAAAAAAYyAAAABgBAAB2AgAAaQEAAF4AAgEGAAABfAAABF0AKgEYAQQBHQMEAgYABAMbAQQDHAMIBEEFCAN0AAAFdgAAACECAgUYAQQBHQMEAgYABAMbAQQDHAMIBEMFCAEbBQABPwcICDkEBAt0AAAFdgAAACEAAhUYAQQBHQMEAgYABAMbAQQDHAMIBBsFAAA9BQgIOAQEARoFCAE/BwgIOQQEC3QAAAV2AAAAIQACGRsBAAIFAAwDGgEIAAUEDAEYBQwBWQIEAXwAAAR8AgAAOAAAABA8AAABHZXRJbkdhbWVUaW1lcgADAAAAAAAAAAAECQAAADAwOjAwOjAwAAQGAAAAaG91cnMABAcAAABzdHJpbmcABAcAAABmb3JtYXQABAYAAAAlMDIuZgAEBQAAAG1hdGgABAYAAABmbG9vcgADAAAAAAAgrEAEBQAAAG1pbnMAAwAAAAAAAE5ABAUAAABzZWNzAAQCAAAAOgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAATAAAAAAAIKAAAAAEAAABGQEAAR4DAAIEAAAAhAAiABkFAAAzBQAKAAYABHYGAAVgAQQIXgAaAR0FBAhiAwQIXwAWAR8FBAhkAwAIXAAWARQGAAFtBAAAXQASARwFCAoZBQgCHAUIDGICBAheAAYBFAQABTIHCAsHBAgBdQYABQwGAAEkBgAAXQAGARQEAAUyBwgLBAQMAXUGAAUMBgABJAYAAIED3fx8AgAANAAAAAwAAAAAAAPA/BAsAAABvYmpNYW5hZ2VyAAQLAAAAbWF4T2JqZWN0cwAECgAAAGdldE9iamVjdAAABAUAAAB0eXBlAAQHAAAAb2JqX0hRAAQHAAAAaGVhbHRoAAQFAAAAdGVhbQAEBwAAAG15SGVybwAEEgAAAFNlbmRWYWx1ZVRvU2VydmVyAAQGAAAAbG9vc2UABAQAAAB3aW4AAAAAAAMAAAAAAAEAAQEAAAAAAAAAAAAAAAAAAAAAFAAAABQAAAACAAICAAAACkAAgB8AgAABAAAABAoAAABzY3JpcHRLZXkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAAABUAAAACAAUKAAAAhgBAAMAAgACdgAABGEBAARfAAICFAIAAjIBAAQABgACdQIABHwCAAAMAAAAEBQAAAHR5cGUABAcAAABzdHJpbmcABAoAAABzZW5kRGF0YXMAAAAAAAIAAAAAAAEBAAAAAAAAAAAAAAAAAAAAABYAAAAlAAAAAgATPwAAAApAAICGgEAAnYCAAAqAgICGAEEAxkBBAAaBQQAHwUECQQECAB2BAAFGgUEAR8HBAoFBAgBdgQABhoFBAIfBQQPBgQIAnYEAAcaBQQDHwcEDAcICAN2BAAEGgkEAB8JBBEECAwAdggABFgECAt0AAAGdgAAACoCAgYaAQwCdgIAACoCAhgoAxIeGQEQAmwAAABdAAIAKgMSHFwAAgArAxIeGQEUAh4BFAQqAAIqFAIAAjMBFAQEBBgBBQQYAh4FGAMHBBgAAAoAAQQIHAIcCRQDBQgcAB0NAAEGDBwCHw0AAwcMHAAdEQwBBBAgAh8RDAFaBhAKdQAACHwCAACEAAAAEBwAAAGFjdGlvbgAECQAAAHVzZXJuYW1lAAQIAAAAR2V0VXNlcgAEBQAAAGh3aWQABA0AAABCYXNlNjRFbmNvZGUABAkAAAB0b3N0cmluZwAEAwAAAG9zAAQHAAAAZ2V0ZW52AAQVAAAAUFJPQ0VTU09SX0lERU5USUZJRVIABAkAAABVU0VSTkFNRQAEDQAAAENPTVBVVEVSTkFNRQAEEAAAAFBST0NFU1NPUl9MRVZFTAAEEwAAAFBST0NFU1NPUl9SRVZJU0lPTgAECwAAAGluZ2FtZVRpbWUABA0AAABCb2xUb29sc1RpbWUABAYAAABpc1ZpcAAEAQAAAAAECQAAAFZJUF9VU0VSAAMAAAAAAADwPwMAAAAAAAAAAAQJAAAAY2hhbXBpb24ABAcAAABteUhlcm8ABAkAAABjaGFyTmFtZQAECwAAAEdldFdlYlBhZ2UABA4AAABib2wtdG9vbHMuY29tAAQXAAAAL2FwaS9ldmVudHM/c2NyaXB0S2V5PQAECgAAAHNjcmlwdEtleQAECQAAACZhY3Rpb249AAQLAAAAJmNoYW1waW9uPQAEDgAAACZib2xVc2VybmFtZT0ABAcAAAAmaHdpZD0ABA0AAAAmaW5nYW1lVGltZT0ABAgAAAAmaXNWaXA9AAAAAAACAAAAAAABAQAAAAAAAAAAAAAAAAAAAAAmAAAAKgAAAAMACiEAAADGQEAAAYEAAN2AAAHHwMAB3YCAAArAAIDHAEAAzADBAUABgACBQQEA3UAAAscAQADMgMEBQcEBAIABAAHBAQIAAAKAAEFCAgBWQYIC3UCAAccAQADMgMIBQcECAIEBAwDdQAACxwBAAMyAwgFBQQMAgYEDAN1AAAIKAMSHCgDEiB8AgAASAAAABAcAAABTb2NrZXQABAgAAAByZXF1aXJlAAQHAAAAc29ja2V0AAQEAAAAdGNwAAQIAAAAY29ubmVjdAADAAAAAAAAVEAEBQAAAHNlbmQABAUAAABHRVQgAAQSAAAAIEhUVFAvMS4wDQpIb3N0OiAABAUAAAANCg0KAAQLAAAAc2V0dGltZW91dAADAAAAAAAAAAAEAgAAAGIAAwAAAPyD15dBBAIAAAB0AAQKAAAATGFzdFByaW50AAQBAAAAAAQFAAAARmlsZQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAA="), nil, "bt", _ENV))()
-TrackerLoad("lhjPspIzCO7cXUBi")
-
-require "VPrediction"
-
-_G.ZeroConfig = {
-	printEnemyDashes = true,
-	shouldWeDebug = false,
-	scriptName = "Zer0 Bundle",
-	menu = nil,
-	ZVersion = 1645,
-	autoUpdate = true,
-	updateHost = "raw.githubusercontent.com",
-	updatePath = "/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000),
-	updateFilePath = SCRIPT_PATH..GetCurrentEnv().FILE_NAME,
-	updateURL = "https://raw.githubusercontent.com/azer0/0BoL/master/Zer0.lua".."?rand="..math.random(1,10000)
+_G.zeroConfig = {
+	UseUpdater = true,
+	AutoDownload = true,
+	Version = 5
 }
 
-_G.DataStore = {
-	ChampionL = nil,
-	Champion = nil
-}
+local UpdateHost = "raw.github.com"
+local UpdatePath = "/azer0/0BoL/master/Version/AZer0.Version?rand=" .. math.random(1, 10000)
+local UpdatePath2 = "/azer0/0BoL/master/AZer0.lua?rand=" .. math.random(1, 10000)
+local UpdateFile = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local VersionURL = "http://"..UpdateHost..UpdatePath
+local UpdateURL = "http://"..UpdateHost..UpdatePath2
 
-ColorCodes = {
-	["Yellow"] = ARGB(0xFF,0xFF,0xFF,0x00),
-	["Red"] = ARGB(0xFF,0xFF,0x00,0x00),
-	["Green"] = ARGB(0xFF,0x00,170,0x00),
-	["White"] = ARGB(0xFF,0xFF,0xFF,0xFF),
-	["Gray"] = ARGB(255,128,128,128),
-	["Blue"] = ARGB(0,0,255,255)
-}
-
-WardInfo = {
-	["YellowTrinket"] = {
-		length = 60,
-		color = ColorCodes.Yellow,
-		spell = "trinkettotemlvl1"
-	},
-	["BlueTrinket"] = {
-		length = 0,
-		color = ColorCodes.Blue,
-		spell = "trinketorblvl3"
-	},
-	["SightWard"] = {
-		length = 150,
-		color = ColorCodes.Yellow,
-		spell = "itemghostward"
-	},
-	["VisionWard"] = {
-		length = 0,
-		color = ColorCodes.Gray,
-		spell = "visionward"
-	}
-}
-
-BadSpotInfo = {
-	["TeemoMushroom"] = {
-		length = 600,
-		color = ColorCodes.Red,
-		spell = "bantamtrap"
-	},
-	["CaitlynTrap"] = {
-		length = 90,
-		color = ColorCodes.Red,
-		spell = "caitlynyordletrap"
-	},
-	["ShacoBox"] = {
-		length = 60,
-		color = ColorCodes.Red,
-		spell = "jackinthebox"
-	}
-}
-
-AllChampions = {
-	["Aatrox"] = {
-		name = "Aatrox",
-		skillData = {
-			["AatroxE"] = {
-				name = "Blade of Torment",
-				spellName = "AatroxE",
-				projectileName = "AatroxBladeofTorment_mis.troy",
-				projectileSpeed = 1200,
-				projectileRange = 1075,
-				projectileRadius = 100,
-				projectileType = "line",
-				spellDelay = 250,
-				selfCast = false,
-				buffAA = false
-			},
-			["AatroxW"] = {
-				name = "AatroxW",
-				spellName = "AatroxW",
-				projectileName = nil,
-				projectileSpeed = nil,
-				projectileRange = nil,
-				projectileRadius = nil,
-				projectileType = nil,
-				selfCast = true,
-				buffAA = true
-			},
-			["AatroxQ"] = {
-				name = "AatroxQ",
-				spellName = "AatroxQ",
-				projectileName = "AatroxQ.troy",
-				projectileSpeed = 450,
-				projectileRange = 650,
-				projectileRadius = 145,
-				projectileType = "circle",
-				selfCast = false,
-				buffAA = false
-			},
-			["AatroxR"] = {
-				name = "AatroxR",
-				spellName = "AatroxR",
-				projectileName = nil,
-				projectileSpeed = nil,
-				projectileRange = 125,
-				projectileRadius = nil,
-				projectileType = nil,
-				selfCast = true,
-				buffAA = true
-			}
-		}
-	},
-
-	["Ahri"] = {
-		name = "Ahri",
-		skillData = {
-			["AhriOrbofDeception"] = {
-				name = "Orb of Deception",
-				spellName = "AhriOrbofDeception",
-				projectileName = "Ahri_Orb_mis.troy",
-				projectileSpeed = 1750,
-				projectileRange = 800,
-				projectileRadius = 100,
-				projectileType = "line",
-				spellDelay = 250,
-				selfCast = false,
-				buffAA = false
-			},
-			["AhriOrbofDeception2"] = {
-				name = "Orb of Deception Return",
-				spellName = "AhriOrbofDeception!",
-				projectileName = "Ahri_Orb_mis_02.troy",
-				projectileSpeed = 915,
-				projectileRange = 800,
-				projectileRadius = 100,
-				projectileType = "line",
-				spellDelay = 0,
-				selfCast = false,
-				buffAA = false
-			},
-			["AhriSeduce"] = {
-				name = "Charm",
-				spellName = "AhriSeduce",
-				projectileName = "Ahri_Charm_mis.troy",
-				projectileSpeed = 1600,
-				projectileRange = 1075,
-				projectileRadius = 60,
-				projectileType = "line",
-				selfCast = false,
-				buffAA = false
-			},
-			["AhriFoxFire"] = {
-				name = "Fox Fire",
-				spellName = "AhriFoxFire",
-				projectileName = "AatroxQ.troy",
-				projectileSpeed = 1400,
-				projectileRange = 750,
-				projectileRadius = nil,
-				projectileType = nil,
-				selfCast = true,
-				buffAA = false
-			}
-		}
-	},
-
-	--alistar
-
-	["Amumu"] = {
-		name = "Amumu",
-		skillData = {
-			["BandageToss"] = {
-				name = "Bandage Toss",
-				spellName = "BandageToss",
-				projectileName = "Bandage_beam.troy",
-				projectileSpeed = 2000,
-				projectileRange = 1100,
-				projectileRadius = 80,
-				projectileType = "line",
-				spellDelay = 250,
-				selfCast = false,
-				buffAA = false
-			},
-			["Tantrum"] = {
-				name = "Tantrum",
-				spellName = "Tantrum",
-				projectileName = nil,
-				projectileSpeed = nil,
-				projectileRange = 200,
-				projectileRadius = nil,
-				projectileType = "circle",
-				spellDelay = 250,
-				selfCast = true,
-				buffAA = false
-			}
-		}
-	},
-}
-
-local BaseArmor = {  --Credit: PewPewPew
-	Aatrox = {Base=24.384, PerLvl=3.8,},
-	Ahri = {Base=20.88, PerLvl=3.5,},
-	Akali = {Base=26.38, PerLvl=3.5,},
-	Alistar = {Base=24.38, PerLvl=3.5,},
-	Amumu = {Base=23.544, PerLvl=3.8,},
-	Anivia = {Base=21.22, PerLvl=4,},
-	Annie = {Base=19.22, PerLvl=4,},
-	Ashe = {Base=21.212, PerLvl=3.4,},
-	AurelionSol = {Base=19, PerLvl=3.6,},
-	Azir = {Base=19.04, PerLvl=3,},
-	Bard = {Base=25, PerLvl=4,},
-	Blitzcrank = {Base=24.38, PerLvl=4,},
-	Brand = {Base=21.88, PerLvl=3.5,},
-	Braum = {Base=26.72, PerLvl=4.5,},
-	Caitlyn = {Base=22.88, PerLvl=3.5,},
-	Cassiopeia = {Base=25, PerLvl=3.5,},
-	Chogath = {Base=28.88, PerLvl=3.5,},
-	Corki = {Base=23.38, PerLvl=3.5,},
-	Darius = {Base=29.88, PerLvl=4,},
-	Diana = {Base=26.048, PerLvl=3.6,},
-	DrMundo = {Base=26.88, PerLvl=3.5,},
-	Draven = {Base=25.544, PerLvl=3.3,},
-	Ekko = {Base=27, PerLvl=3,},
-	Elise = {Base=22.128, PerLvl=3.35,},
-	Evelynn = {Base=26.5, PerLvl=3.8,},
-	Ezreal = {Base=21.88, PerLvl=3.5,},
-	Fiddlesticks = {Base=20.88, PerLvl=3.5,},
-	Fiora = {Base=24, PerLvl=3.5,},
-	Fizz = {Base=22.412, PerLvl=3.4,},
-	Galio = {Base=26.88, PerLvl=3.5,},
-	Gangplank = {Base=26, PerLvl=3,},
-	Garen = {Base=27.536, PerLvl=3,},
-	Gnar = {Base=23, PerLvl=2.5,},
-	Gragas = {Base=26.048, PerLvl=3.6,},
-	Graves = {Base=24.376, PerLvl=3.4,},
-	Hecarim = {Base=26.72, PerLvl=4,},
-	Heimerdinger = {Base=19.04, PerLvl=3,},
-	Illaoi = {Base=26, PerLvl=3.8,},
-	Irelia = {Base=25.3, PerLvl=3.75,},
-	Janna = {Base=19.384, PerLvl=3.8,},
-	JarvanIV = {Base=29.048, PerLvl=3.6,},
-	Jax = {Base=27.04, PerLvl=3,},
-	Jayce = {Base=22.38, PerLvl=3.5,},
-	Jhin = {Base=20, PerLvl=3.5,},
-	Jinx = {Base=22.88, PerLvl=3.5,},
-	Kalista = {Base=19.012, PerLvl=3.5,},
-	Karma = {Base=20.384, PerLvl=3.8,},
-	Karthus = {Base=20.88, PerLvl=3.5,},
-	Kassadin = {Base=23.376, PerLvl=3.2,},
-	Katarina = {Base=26.88, PerLvl=3.5,},
-	Kayle = {Base=26.88, PerLvl=3.5,},
-	Kennen = {Base=24.3, PerLvl=3.75,},
-	Khazix = {Base=27, PerLvl=3,},
-	Kindred = {Base=27, PerLvl=3.25,},
-	KogMaw = {Base=19.88, PerLvl=3.5,},
-	Leblanc = {Base=21.88, PerLvl=3.5,},
-	LeeSin = {Base=24.216, PerLvl=3.7,},
-	Leona = {Base=27.208, PerLvl=3.6,},
-	Lissandra = {Base=20.216, PerLvl=3.7,},
-	Lucian = {Base=24.04, PerLvl=3,},
-	Lulu = {Base=19.216, PerLvl=3.7,},
-	Lux = {Base=18.72, PerLvl=4,},
-	Malphite = {Base=28.3, PerLvl=3.75,},
-	Malzahar = {Base=21.88, PerLvl=3.5,},
-	Maokai = {Base=28.72, PerLvl=4,},
-	MasterYi = {Base=24.04, PerLvl=3,}, 
-	MissFortune = {Base=24.04, PerLvl=3,},
-	Mordekaiser = {Base=20, PerLvl=3.75,},
-	Morgana = {Base=25.384, PerLvl=3.8,},
-	Nami = {Base=19.72, PerLvl=4,},
-	Nasus = {Base=24.88, PerLvl=3.5,},
-	Nautilus = {Base=26.46, PerLvl=3.75,},
-	Nidalee = {Base=22.88, PerLvl=3.5,},
-	Nocturne = {Base=26.88, PerLvl=3.5,},
-	Nunu = {Base=26.38, PerLvl=3.5,},
-	Olaf = {Base=26.04, PerLvl=3,},
-	Orianna = {Base=17.04, PerLvl=3,},
-	Pantheon = {Base=27.652, PerLvl=3.9,},
-	Poppy = {Base=29, PerLvl=3.5,},
-	Quinn = {Base=23.38, PerLvl=3.5,},
-	Rammus = {Base=31.384, PerLvl=4.3,},
-	RekSai = {Base=28.3, PerLvl=3.75,},
-	Renekton = {Base=25.584, PerLvl=3.8,},
-	Rengar = {Base=25.88, PerLvl=3.5,},
-	Riven = {Base=24.376, PerLvl=3.2,},
-	Rumble = {Base=25.88, PerLvl=3.5,},
-	Ryze = {Base=21.552, PerLvl=3,},
-	Sejuani = {Base=29.54, PerLvl=3,},
-	Shaco = {Base=24.88, PerLvl=3.5,},
-	Shen = {Base=25	, PerLvl=2.6,},
-	Shyvana = {Base=27.628, PerLvl=3.35,},
-	Singed = {Base=27.88, PerLvl=3.5,},
-	Sion = {Base=23.04, PerLvl=3,},
-	Sivir = {Base=22.21, PerLvl=3.25,},
-	Skarner = {Base=29.384, PerLvl=3.8,},
-	Sona = {Base=20.544, PerLvl=3.3,},
-	Soraka = {Base=23.384, PerLvl=3.8,},
-	Swain = {Base=22.72, PerLvl=4,},
-	Syndra = {Base=24.712, PerLvl=3.4,},
-	TahmKench = {Base=27, PerLvl=3.5,},
-	Taliyah = {Base=20, PerLvl=3,},
-	Talon = {Base=26.88, PerLvl=3.5,},
-	Taric = {Base=25, PerLvl=3.4,},
-	Teemo = {Base=24.3, PerLvl=3.75,},
-	Thresh = {Base=16, PerLvl=0,},
-	Tristana = {Base=22.0, PerLvl=3,},
-	Trundle = {Base=27.536, PerLvl=2.7,},
-	Tryndamere = {Base=24.108, PerLvl=3.1,},
-	TwistedFate = {Base=20.542, PerLvl=3.15,},
-	Twitch = {Base=23.04, PerLvl=3,},
-	Udyr = {Base=25.47, PerLvl=4,},
-	Urgot = {Base=24.544, PerLvl=3.3,},
-	Varus = {Base=23.212, PerLvl=3,},
-	Vayne = {Base=19.012, PerLvl=3.4,},
-	Veigar = {Base=22.55, PerLvl=3.75,},
-	VelKoz = {Base=21.88, PerLvl=3.5,},
-	Vi = {Base=25.88, PerLvl=3.5,},
-	Viktor = {Base=22.72, PerLvl=4,},
-	Vladimir = {Base=23	, PerLvl=3.3,},
-	Volibear = {Base=26.38, PerLvl=3.5,},
-	Warwick = {Base=25.88, PerLvl=3.5,},
-	MonkeyKing = {Base=24.88, PerLvl=3.5,},
-	Xerath = {Base=21.88, PerLvl=3.5,},
-	XinZhao = {Base=25.88, PerLvl=3.5,},
-	Yasuo = {Base=24.712, PerLvl=3.4,},
-	Yorick = {Base=25.048, PerLvl=3.6,},
-	Zac = {Base=23.88, PerLvl=3.5,},
-	Zed = {Base=26.88, PerLvl=3.5,},
-	Ziggs = {Base=21.544, PerLvl=3.3,},
-	Zilean = {Base=19.134, PerLvl=3.8,},
-	Zyra = {Base=20.04, PerLvl=3,},
-}
-
-local BaseMR =  --Credit: Roach
-{
-	Aatrox = { Base = 32.10, PerLevel = 1.25 },
-	Ahri = { Base = 30.00, PerLevel = 0.00 },
-	Akali = { Base = 32.10, PerLevel = 1.25 },
-	Alistar = { Base = 32.10, PerLevel = 1.25 },
-	Amumu = { Base = 32.10, PerLevel = 1.25 },
-	Anivia = { Base = 30.00, PerLevel = 0.00 },
-	Annie = { Base = 30.00, PerLevel = 0.00 },
-	Ashe = { Base = 30.00, PerLevel = 0.00 },
-	AurelionSol = { Base = 30.00, PerLevel = 0.00 },
-	Azir = { Base = 30.00, PerLevel = 0.00 },
-	Bard = { Base = 30.00, PerLevel = 0.00 },
-	Blitzcrank = { Base = 32.10, PerLevel = 1.25 },
-	Brand = { Base = 30.00, PerLevel = 0.00 },
-	Braum = { Base = 32.10, PerLevel = 1.25 },
-	Caitlyn = { Base = 30.00, PerLevel = 0.00 },
-	Cassiopeia = { Base = 30.00, PerLevel = 0.00 },
-	ChoGath = { Base = 32.10, PerLevel = 1.25 },
-	Corki = { Base = 30.00, PerLevel = 0.00 },
-	Darius = { Base = 32.10, PerLevel = 1.25 },
-	Diana = { Base = 32.10, PerLevel = 1.25 },
-	DrMundo = { Base = 32.10, PerLevel = 1.25 },
-	Draven = { Base = 30.00, PerLevel = 0.00 },
-	Ekko = { Base = 32.00, PerLevel = 1.25 },
-	Elise = { Base = 30.00, PerLevel = 0.00 },
-	Evelynn = { Base = 32.10, PerLevel = 1.25 },
-	Ezreal = { Base = 30.00, PerLevel = 0.00 },
-	Fiddlesticks = { Base = 30.00, PerLevel = 0.00 },
-	Fiora = { Base = 32.10, PerLevel = 1.25 },
-	Fizz = { Base = 32.10, PerLevel = 1.25 },
-	Galio = { Base = 32.10, PerLevel = 1.25 },
-	Gangplank = { Base = 32.10, PerLevel = 1.25 },
-	Garen = { Base = 32.10, PerLevel = 1.25 },
-	Gnar = { Base = 30.00, PerLevel = 0.00 },
-	Gragas = { Base = 32.10, PerLevel = 1.25 },
-	Graves = { Base = 30.00, PerLevel = 0.00 },
-	Hecarim = { Base = 32.10, PerLevel = 1.25 },
-	Heimerdinger = { Base = 30.00, PerLevel = 0.00 },
-	Illaoi = { Base = 32.10, PerLevel = 1.25 },
-	Irelia = { Base = 32.10, PerLevel = 1.25 },
-	Janna = { Base = 30.00, PerLevel = 0.00 },
-	JarvanIV = { Base = 32.10, PerLevel = 1.25 },
-	Jax = { Base = 32.10, PerLevel = 1.25 },
-	Jayce = { Base = 30.00, PerLevel = 0.00 },
-	Jhin = { Base = 30.00, PerLevel = 0.00 },
-	Jinx = { Base = 30.00, PerLevel = 0.00 },
-	Kalista = { Base = 30.00, PerLevel = 0.00 },
-	Karma = { Base = 30.00, PerLevel = 0.00 },
-	Karthus = { Base = 30.00, PerLevel = 0.00 },
-	Kassadin = { Base = 30.00, PerLevel = 0.00 },
-	Katarina = { Base = 32.10, PerLevel = 1.25 },
-	Kayle = { Base = 30.00, PerLevel = 0.00 },
-	Kennen = { Base = 30.00, PerLevel = 0.00 },
-	KhaZix = { Base = 32.10, PerLevel = 1.25 },
-	Kindred = { Base = 30.00, PerLevel = 0.00 },
-	KogMaw = { Base = 30.00, PerLevel = 0.00 },
-	LeBlanc = { Base = 30.00, PerLevel = 0.00 },
-	LeeSin = { Base = 32.10, PerLevel = 1.25 },
-	Leona = { Base = 32.10, PerLevel = 1.25 },
-	Lissandra = { Base = 30.00, PerLevel = 0.00 },
-	Lucian = { Base = 30.00, PerLevel = 0.00 },
-	Lulu = { Base = 30.00, PerLevel = 0.00 },
-	Lux = { Base = 30.00, PerLevel = 0.00 },
-	Malphite = { Base = 32.10, PerLevel = 1.25 },
-	Malzahar = { Base = 30.00, PerLevel = 0.00 },
-	Maokai = { Base = 32.10, PerLevel = 1.25 },
-	MasterYi = { Base = 32.10, PerLevel = 1.25 },
-	MissFortune = { Base = 30.00, PerLevel = 0.00 },
-	MonkeyKing = { Base = 32.10, PerLevel = 1.25 },
-	Mordekaiser = { Base = 32.10, PerLevel = 1.25 },
-	Morgana = { Base = 30.00, PerLevel = 0.00 },
-	Nami = { Base = 30.00, PerLevel = 0.00 },
-	Nasus = { Base = 32.10, PerLevel = 1.25 },
-	Nautilus = { Base = 32.10, PerLevel = 1.25 },
-	Nidalee = { Base = 30.00, PerLevel = 0.00 },
-	Nocturne = { Base = 32.10, PerLevel = 1.25 },
-	Nunu = { Base = 32.10, PerLevel = 1.25 },
-	Olaf = { Base = 32.10, PerLevel = 1.25 },
-	Orianna = { Base = 30.00, PerLevel = 0.00 },
-	Pantheon = { Base = 32.10, PerLevel = 1.25 },
-	Poppy = { Base = 32.00, PerLevel = 1.25 },
-	Quinn = { Base = 30.00, PerLevel = 0.00 },
-	Rammus = { Base = 32.10, PerLevel = 1.25 },
-	RekSai = { Base = 32.10, PerLevel = 1.25 },
-	Renekton = { Base = 32.10, PerLevel = 1.25 },
-	Rengar = { Base = 32.10, PerLevel = 1.25 },
-	Riven = { Base = 32.10, PerLevel = 1.25 },
-	Rumble = { Base = 32.10, PerLevel = 1.25 },
-	Ryze = { Base = 30.00, PerLevel = 0.00 },
-	Sejuani = { Base = 32.10, PerLevel = 1.25 },
-	Shaco = { Base = 32.10, PerLevel = 1.25 },
-	Shen = { Base = 32.10, PerLevel = 1.25 },
-	Shyvana = { Base = 32.10, PerLevel = 1.25 },
-	Singed = { Base = 32.10, PerLevel = 1.25 },
-	Sion = { Base = 32.10, PerLevel = 1.25 },
-	Sivir = { Base = 30.00, PerLevel = 0.00 },
-	Skarner = { Base = 32.10, PerLevel = 1.25 },
-	Sona = { Base = 30.00, PerLevel = 0.00 },
-	Soraka = { Base = 30.00, PerLevel = 0.00 },
-	Swain = { Base = 30.00, PerLevel = 0.00 },
-	Syndra = { Base = 30.00, PerLevel = 0.00 },
-	TahmKench = { Base = 32.10, PerLevel = 1.25 },
-	Taliyah = { Base = 30.00, PerLevel = 0.00 },
-	Talon = { Base = 32.10, PerLevel = 1.25 },
-	Taric = { Base = 32.10, PerLevel = 1.25 },
-	Teemo = { Base = 30.00, PerLevel = 0.00 },
-	Thresh = { Base = 30.00, PerLevel = 0.00 },
-	Tristana = { Base = 30.00, PerLevel = 0.00 },
-	Trundle = { Base = 32.10, PerLevel = 1.25 },
-	Tryndamere = { Base = 32.10, PerLevel = 1.25 },
-	TwistedFate = { Base = 30.00, PerLevel = 0.00 },
-	Twitch = { Base = 30.00, PerLevel = 0.00 },
-	Udyr = { Base = 32.10, PerLevel = 1.25 },
-	Urgot = { Base = 30.00, PerLevel = 0.00 },
-	Varus = { Base = 30.00, PerLevel = 0.00 },
-	Vayne = { Base = 30.00, PerLevel = 0.00 },
-	Veigar = { Base = 30.00, PerLevel = 0.00 },
-	VelKoz = { Base = 30.00, PerLevel = 0.00 },
-	Vi = { Base = 32.10, PerLevel = 1.25 },
-	Viktor = { Base = 30.00, PerLevel = 0.00 },
-	Vladimir = { Base = 30.00, PerLevel = 0.00 },
-	Volibear = { Base = 32.10, PerLevel = 1.25 },
-	Warwick = { Base = 32.10, PerLevel = 1.25 },
-	Xerath = { Base = 30.00, PerLevel = 0.00 },
-	XinZhao = { Base = 32.10, PerLevel = 1.25 },
-	Yasuo = { Base = 30.00, PerLevel = 0.00 },
-	Yorick = { Base = 32.10, PerLevel = 1.25 },
-	Zac = { Base = 32.10, PerLevel = 1.25 },
-	Zed = { Base = 32.10, PerLevel = 1.25 },
-	Ziggs = { Base = 30.00, PerLevel = 0.00 },
-	Zilean = { Base = 30.00, PerLevel = 0.00 },
-	Zyra = { Base = 30.00, PerLevel = 0.00 }
-}
-
-local ItemsToUse = {
-	"BilgewaterCutlass",
-	"YoumusBlade",
-	"HextechGunblade",
-	"ItemSwordOfFeastAndFamine",
-	"QuicksilverSash",
-	"ItemDervishBlade"
-}
-
-local PotionsToUse = {
-	"ItemCrystalFlask",
-	"RegenerationPotion",
-	"ItemMiniRegenPotion",
-	"ItemCrystalFlaskJungle",
-	"ItemDarkCrystalFlask"
-}
-
-local BuffsDontAttack = {
-	"undyingrage",
-	"sionpassivezombie",
-	"aatroxpassivedeath",
-	"chronoshift",
-	"judicatorintervention"
-}
-
---Champion Classes
-class("ChampionLoader")
-function ChampionLoader:__init()
-	
+function AutoUpdaterPrint(msg)
+	print("<font color=\"#FF794C\"><b>Zer0 Bundle</b></font> <font color=\"#FFDFBF\"><b>"..msg.."</b></font>")
 end
 
-function ChampionLoader:CanUseChamp()
-	if myHero.charName == "Taliyah" then
-		return true
-	elseif myHero.charName == "Lux" then
-		return true
-	elseif myHero.charName == "Ashe" then
-		return true
-	elseif myHero.charName == "Soraka" then
-		return true
-	elseif myHero.charName == "Teemo" then
-		return true
-	elseif myHero.charName == "Ahri" then
-		return true
+local hasBeenUpdated = false
+
+if _G.zeroConfig.UseUpdater then
+	local sData = GetWebResult(UpdateHost, UpdatePath)
+	if sData then
+		local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
+		if sVer and sVer > scriptData.Version then
+			AutoUpdaterPrint("New update found [v" .. sVer .. "].")
+			AutoUpdaterPrint("Please do not reload until complete.")
+			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
+			hasBeenUpdated = true
+		else
+			AutoUpdaterPrint("No update needed, your using the latest version.")
+		end
+	end
+end
+
+if hasBeenUpdated then
+	return
+end
+
+local supportedChamps = {
+	["Irelia"] = true,
+	["Taliyah"] = true,
+	["Ryze"] = true
+}
+
+if not supportedChamps[myHero.charName] then
+	print("<font color=\"#FF794C\"><b>Zer0 Bundle</b></font> <font color=\"#FFDFBF\"><b>Champion [".. myHero.charName .."] not currently supported.</b></font>")
+	return
+end
+
+_G.azBundle = {
+	ChampionData = nil,
+	Champion = nil,
+	PrintManager = nil,
+	MenuManager = nil,
+	Orbwalk = nil,
+	EvadeManager = nil,
+	AwareManager = nil,
+	MiscManager = nil,
+	ItemDmgManager = nil
+}
+--[[-----------------------------------------------------
+-----------------------CHAMP DATA------------------------
+-----------------------------------------------------]]--
+class("ChampionData")
+function ChampionData:__init()
+	self.SkillQ = {}
+	self.SkillW = {}
+	self.SkillE = {}
+	self.SkillR = {}
+	
+	self.charName = nil
+	self.scriptName = nil
+	
+	if myHero.charName == "Irelia" then
+		self.SkillQ = {
+			range = 650,
+			delay = 0.25,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_Q).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillW = {
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillE = {
+			range = 425,
+			delay = 0.25,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_E).level
+				levelDamage = {40,52.5,65,77.5,90}
+				myApScale = source.ap * 0.2
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillR = {
+			range = 1200,
+			delay = 80,
+			speed = 1600,
+			width = 25,
+			Damage = function(source, target) return (source:GetSpellData(_R).level * 40 + 40 + source.ap * 0.5 + source.addDamage * 0.6) * 3 end
+		}
+		
+		self.charName = "Irelia"
+		self.scriptName = "Night Blade"
+		
+	elseif myHero.charName == "Taliyah" then
+		self.SkillQ = {
+			range = 910,
+			delay = 0.2,
+			width = 130,
+			speed = 1200,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_Q).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillW = {
+			range = 900,
+			delay = 0.5,
+			width = 150,
+			speed = 1500,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillE = {
+			range = 570,
+			delay = math.huge,
+			width = 330,
+			speed = 800,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_E).level
+				levelDamage = {40,52.5,65,77.5,90}
+				myApScale = source.ap * 0.2
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillR = {
+			range = 2000,
+			Damage = function(source, target) return (source:GetSpellData(_R).level * 40 + 40 + source.ap * 0.5 + source.addDamage * 0.6) * 3 end
+		}
+		
+		self.charName = "Taliyah"
+		self.scriptName = "Rock Candy"
+	elseif myHero.charName == "Ryze" then
+		self.SkillQ = {
+			range = 1000,
+			delay = 0.25,
+			width = 55,
+			speed = 1700,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_Q).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillW = {
+			range = 615,
+			delay = 0.25,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				levelDamage = {60,80,100,120,140}
+				myApScale = source.ap * 0.4
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillE = {
+			range = 615,
+			delay = 0.25,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_E).level
+				levelDamage = {40,52.5,65,77.5,90}
+				myApScale = source.ap * 0.2
+				damage = levelDamage[spellLevel] + myApScale
+				return damage
+			end
+		}
+		self.SkillR = {
+			range = function(source)
+				if source and source:GetSpellData(_E).level == 1 then
+					return 1500
+				elseif source and source:GetSpellData(_E).level == 2 then
+					return 3000
+				else
+					return 0
+				end end,
+			Damage = function(source, target) return 0 end
+		}
+		
+		self.charName = "Ryze"
+		self.scriptName = "Overload"
+	end
+	
+	self.InteruptSpellList = 
+	{
+		["KatarinaR"] = true,
+		["AlZaharNetherGrasp"] = true,
+		["TwistedFateR"] = true,
+		["VelkozR"] = true,
+		["InfiniteDuress"] = true,
+		["JhinR"] = true,
+		["CaitlynAceintheHole"] = true,
+		["UrgotSwap2"] = true,
+		["LucianR"] = true,
+		["GalioIdolOfDurand"] = true,
+		["MissFortuneBulletTime"] = true,
+		["XerathLocusPulse"] = true
+	}
+	
+	self.DashSpellList = {
+		"AatroxQ", -- Aatrox Q
+		"AhriTumble", -- Ahri R
+		"AkaliShadowDance", -- Akali R
+		"Arcane Shift", -- Ezreal E
+		"BandageToss", -- Amumu Q
+		"blindmonkqtwo", -- Lee Sin Q
+		"CarpetBomb", -- Corki W
+		"Crowstorm", -- Fiddlesticks R
+		"Drain", -- Fiddlesticks W
+		"slashCast", -- Trynd E
+		"Cutthroat", -- Talon E
+		"Death Mark", --Zed R
+		"DianaTeleport", -- Diana R
+		"Distortion", -- Leblanc W
+		"EliseSpiderQCast", -- Elise Q
+		"FioraQ", -- Fiora Q
+		"FizzPiercingStrike", -- Fizz Q
+		"Glacial Path", -- Lissandra E
+		"GragasE", -- Gragas E
+		"GravesMove", -- Graves E
+		"Headbutt", -- Alistar W
+		"HecarimUlt", -- Hecarim R
+		"IreliaGatotsu", -- Irelia Q
+		"jarvanAddition", -- Jarvan Dash
+		"JarvanIVDragonStrike", -- Jarvan Q
+		"jarvanivcataclysmattack", -- Jarvan R
+		"JarvanIVCataclysmAttack", -- Jarvan R
+		"JaxLeapStrike", -- Jax Q
+		"JayceToTheSkies", -- Jayce Q
+		"KhazixE", -- Kha'Zix E
+		"khazixeevo", -- Kha'Zix E evolved
+		"khazixelong", -- Kha'Zix E evolved
+		"LastBreath", -- Yasuo R
+		"LeblancSlide", -- Leblanc W
+		"LeblancSlideM", -- Leblanc R
+		"LeonaZenithBlade", -- Leona E
+		"Living Shadow", --Zed W
+		"LucianE", -- Lucian E
+		"MaokaiTrunkLine", -- Maokai W
+		"MonkeyKingNimbus", -- Wukong E
+		"NautilusAnchorDrag", -- Nautilus Q
+		"PantheonW", -- Pantheon W
+		"Pantheon_GrandSkyfall_Jump", -- Pantheon R
+		"PoppyHeroicCharge", -- Poppy E
+		"Pounce", -- Nidalee W
+		"RenektonSliceAndDice", -- Renekton E
+		"Riftwalk", -- Kassadin R
+		"RivenFeint", -- Riven E
+		"RivenTriCleave", -- Riven E
+		"RocketJump", -- Tristana W
+		"SejuaniArcticAssault", -- Sejuani Q
+		"ShadowStep", -- Katarina E
+		"ShenShadowDash", -- Shen E
+		"Shunpo", -- Katarina E
+		"ShyvanaTransformCast", -- Shyvana R
+		"Slash", -- Tryndamere E
+		"UFSlash", -- Malphite R
+		"QuinnE", -- Quinn E
+		"ViQ", -- Vi Q
+		"XenZhaoSweep", -- Xin Zhao E
+		"YasuoDashWrapper" -- Yasuo E
+	}
+end
+
+function ChampionData:CanInterupt(spell)
+	for i, sS in pairs(self.InteruptSpellList) do
+		if sS and spell == sS then
+			return true
+		end
 	end
 	return false
 end
 
-function ChampionLoader:GetChampO()
-	if myHero.charName == "Taliyah" then
-		return ChampionTaliyah()
-	elseif myHero.charName == "Lux" then
-		return ChampionLux()
-	elseif myHero.charName == "Ashe" then
-		return ChampionAshe()
-	elseif myHero.charName == "Soraka" then
-		return ChampionSoraka()
-	elseif myHero.charName == "Teemo" then
-		return ChampionTeemo()
-	elseif myHero.charName == "Ahri" then
-		return ChampionAhri()
+function ChampionData:IsDash(spell)
+	for i, sS in pairs(self.DashSpellList) do
+		if sS and spell == sS then
+			return true
+		end
 	end
-	return nil
+	return false
 end
 
---
---
---TALIYAH
---
---
-local onWorkedGround = false
-local usedGround = {}
-class("ChampionTaliyah")
-function ChampionTaliyah:__init()
-	self.ver = 1003
-
-	PrintPretty("Credits To: UndercoverRiotEmployee and Royalsaint [Ideas]", true, false)
-
-	self.menu = scriptConfig("Zer0 Bundle - Taliyah", "003dataTaliyah")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qnew", "Use Q on Un-Worked Ground", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qused", "Use Q on Worked Ground", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Waway", "W away when more HP", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Wtoward", "W toward when less HP", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Wmine", "W into E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Ignite", "Use Ignite", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Qnew", "Use Q on Un-Worked Ground", SCRIPT_PARAM_ONOFF, false)
-		self.menu.harass:addParam("Qused", "Use Q on Worked Ground", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Waway", "W away when more HP", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Wtoward", "W toward when less HP", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Wmine", "W into E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qnew", "Use Q on Un-Worked Ground", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qused", "Use Q on Worked Ground", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Waway", "W away when more HP", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Wtoward", "W toward when less HP", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Wmine", "W into E", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Dash Logic <-", "dash")
-		for _,v in pairs(GetEnemyHeroes()) do
-				if v then
-					self.menu.dash:addParam(v.charName, v.charName, SCRIPT_PARAM_ONOFF, true)
-				end
-			end
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("worked", "Draw Worked Ground", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-
-	_G.UPL:AddSpell(_Q, { speed = 1400, delay = 0.2, range = 910, width = 120, collision = true, aoe = false, type = "linear" })
-	_G.UPL:AddSpell(_W, { speed = 1000, delay = 0.5, range = 900, width = 125, collision = false, aoe = true, type = "circular" })
-	_G.UPL:AddSpell(_E, { speed = 800, delay = math.huge, range = 570, width = 330, collision = false, aoe = true, type = "cone" })
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 910, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 910, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 910, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 910, myHero, MINION_SORT_HEALTH_ASC)
-
-	self.spellManager = SpellMaster()
-
-	AddDrawCallback(function() self:OnDraw() end)
-	AddTickCallback(function() self:OnTick() end)
-	AddNewPathCallback(function(unit, startPos, endPos, isDash ,dashSpeed,dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-	AddProcessSpellCallback(function(object, spell) self:OnProcessSpell(object, spell) end)
-end
-
-function ChampionTaliyah:OnTick()
-	onWorkedGround = false
-	for i, worked in pairs(usedGround) do
-		if worked.expire <= os.clock() then
-			table.remove(usedGround, i)
-		else
-			if worked and worked.obje and worked.obje.pos and myHero:GetDistance(worked.obje) <= 425 then
-				onWorkedGround = true
-			end
-		end
-	end
-	if not myHero or myHero.health < 1 or myHero.dead then
-		return
-	end
-
-	self.ts:update()
-
-	if self.menu.keys.flee then
-		self:FleeMode()
-		return
-	end
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
-	end
-end
-
-function ChampionTaliyah:OnDraw()
-	if self.menu.draw.target and self.ts.target ~= nil then
-		DrawCircle3D(self.ts.target.x, self.ts.target.y, self.ts.target.z, 175, 4, ARGB(80, 32,178,100), 52)
-	end
-
-	if self.menu.draw.worked and onWorkedGround then
-		sPos = WorldToScreen(D3DXVECTOR3(myHero.x,myHero.y,myHero.z))
-		DrawText("On Worked Ground", 20, sPos.x - 75, sPos.y + 25, ARGB(150,255,255,255))
-	end
-
-	if self.menu.draw.damage then
-		for _,v in pairs(GetEnemyHeroes()) do
-			if ValidTarget(v) then
-				local barPos = GetUnitHPBarPos(v)
-				local barOffset = GetUnitHPBarOffset(v)
-				do
-					local t = {
-						["Darius"] = -0.05,
-						["Renekton"] = -0.05,
-						["Sion"] = -0.05,
-						["Thresh"] = 0.03,
-						["Jhin"] = -0.06,
-						['AniviaEgg'] = -0.1,
-						["Annie"] = -0.25
-					}
-					barOffset.x = t[v.charName] or 0
-				end
-				local baseX = barPos.x - 69 + barOffset.x * 150
-				local baseY = barPos.y + barOffset.y * 50 + 12.5
-
-				if v.charName == "Jhin" then 
-					baseY = baseY - 12
-				end
-				
-				local myDamage = 0
-				local comboNeeded = nil
-				if (self.menu.combo.W and self.spellManager:CanCast("W")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) and (self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = self:Damage("Q") + self:Damage("W") + self:Damage("E")
-					comboNeeded = "Full"
-				end
-				if (self.menu.combo.W and self.spellManager:CanCast("W")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("W")
-					comboNeeded = "Q-W"
-				end
-				if (self.menu.combo.E and self.spellManager:CanCast("E")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("E")
-					comboNeeded = "Q-E"
-				end
-				if (self.menu.combo.E and self.spellManager:CanCast("E")) and (self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = self:Damage("W") + self:Damage("E")
-					comboNeeded = "W-E"
-				end
-				if (self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = self:Damage("E")
-					comboNeeded = "E"
-				end
-				if (self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = self:Damage("W")
-					comboNeeded = "W"
-				end
-				if (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q")
-					comboNeeded = "Q"
-				end
-
-				local dmgperc = myDamage/v.health*100
-				local enemyhpperc = v.health/v.maxHealth
-				
-				if dmgperc < 100 then
-					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				else
-					if comboNeeded then
-						DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-						DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-					end
-				end
-				
-			end
-		end
-	end
-end
-
-function ChampionTaliyah:OnProcessSpell(object, spell)
-	if object == myHero and spell.name == "TaliyahW" and self.wTarget then
-		local targetsInRange = 0
-		local chosenTarget = nil
-		for _, e in ipairs(GetEnemyHeroes()) do
-			if e and not e.dead and e.health > 0 and GetDistance(e.pos, self.wTarget.pos) <= 125 then
-				targetsInRange = targetsInRange + 1
-				if chosenTarget == nil then
-					chosenTarget = e
-				elseif (GetDistance(e.pos, self.wTarget.pos) > GetDistance(chosenTarget.pos, self.wTarget.pos)) or (chosenTarget.health > e.health) then
-					chosenTarget = e
-				end
-			end
-		end
-		if chosenTarget == nil and self.wTarget then
-			DelayAction(function() self.spellManager:CastSpellPosition(self.wTarget.pos, _W) end, 2)
-			self.wTarget = nil
-		else
-			if (chosenTarget.health > 0) and not chosenTarget.dead then
-				if (CountAllyInRange(800, myHero) > CountEnemyInRange(800, chosenTarget)) or (CountAllyInRange(800, myHero) > CountEnemyInRange(950, myHero)) then
-					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 80)
-						if nEndPos then
-							self.spellManager:CastSpellPosition(nEndPos, _W)
-							self.wTarget = nil
-						end
-					end, 1.25)
-				elseif chosenTarget.health >= myHero.health and self.menu.combo.Waway then
-					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(chosenTarget, myHero, 80)
-						if nEndPos then
-							self.spellManager:CastSpellPosition(nEndPos, _W)
-							self.wTarget = nil
-						end
-					end, 1.25)
-					PrintPretty("Casting [W2] on " .. chosenTarget.charName .. " to [Push].", true, true)
-				elseif chosenTarget.health < myHero.health and self.menu.combo.Wtoward then
-					DelayAction(function() 
-						nEndPos = DoYouEvenExtend(myHero, chosenTarget, 80)
-						if nEndPos then
-							self.spellManager:CastSpellPosition(nEndPos, _W)
-							self.wTarget = nil
-						end
-					end, 1.25)
-					PrintPretty("Casting [W2] on " .. chosenTarget.charName .. " to [Pull].", true, true)
-				end
-			end
-		end
-	end
-end
-
-function ChampionTaliyah:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit == nil or endPos == nil or not self.spellManager:CanCast("E") or not isDash or unit.team == myHero.team or unit.type ~= myHero.type then
-		return
-	end
-
-	if GetDistance(endPos, myHero.pos) < 570 then
-		CastSpell(_E, endPos.x, endPos.z)
-		PrintPretty("Casting [E] for dash from [" .. unit.charName .. "]", self.menu.debug.dash, true)
-	end
-end
-
-function ChampionTaliyah:FleeMode()
-
-end
-
-function ChampionTaliyah:LaneClearMode()
-	self.enemyMinions:update()
-	if self.enemyMinions.target and self.enemyMinions.target.health > 0 and not self.enemyMinions.target.dead then
-		if self.spellManager:CanCast("Q") and self.menu.laneclear.Q and self.enemyMinions.target.health <= self:Damage("Q") and onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.enemyMinions.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		end
-	end
-
-	if self.spellManager:CanCast("W") and self.menu.laneclear.E then
-		bestPos, bestHit = GetFarmPosition(550, 250, self.enemyMinions.objects)
-		if bestPos and bestHit >= 3 and GetDistance(bestPos, myHero.pos) <=  550 then
-			self.spellManager:CastSpellPosition(bestPos, _E)
-		end
-	end
-end
-
-function ChampionTaliyah:ComboMode()
-	if self.ts.target == nil or self.ts.target:GetDistance(myHero) >= 910 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 910) then
-		return
-	end
-
-	if myHero:GetDistance(self.ts.target) <= 530 then
-		local totalDamage = 0
-		local comboText = ""
-
-		if self.spellManager:CanCast(_Q) then
-			totalDamage = totalDamage + self:Damage("Q")
-			comboText = "Q"
-		end
-		if self.spellManager:CanCast(_W) then
-			totalDamage = totalDamage + self:Damage("W")
-			comboText = comboText .. "W"
-		end
-		if self.spellManager:CanCast(_E) then
-			totalDamage = totalDamage + self:Damage("E")
-			comboText = comboText .. "E"
-		end
-
-		if self.ts.target.health + (self.ts.target.health * .1) < totalDamage then
-			if comboText == "QW" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) then
-				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance) then
-					self.spellManager:CastSpellPosition(castPosQ, _Q)
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			elseif comboText == "QE" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_E) then
-				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-				castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
-				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance) then
-					self.spellManager:CastSpellPosition(castPosQ, _Q)
-					self.spellManager:CastSpellPosition(castPosW, _E)
-				end
-			elseif comboText == "WE" and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_E) then
-				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance) then
-					self.spellManager:CastSpellPosition(castPosW, _E)
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			elseif comboText == "QWE" and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_E) then
-				castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
-				if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance) and (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance) then
-					self.spellManager:CastSpellPosition(castPosQ, _Q)
-					self.spellManager:CastSpellPosition(castPosE, _E)
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			end
-		end
-	end
-
-	if self.menu.combo.E and self.spellManager:CanCast("E") and GetDistance(myHero, self.ts.target) <= 570 then
-		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			if self.menu.combo.W and self.spellManager:CanCast("W") and self.menu.combo.Wmine then
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			end
-		end
-	end
-
-	if self.menu.combo.Q and GetDistance(myHero, self.ts.target) <= 910 then
-		if self.menu.combo.Qnew and not onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		elseif self.menu.combo.Qused and onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		end
-	end
-
-	if self.menu.combo.W and self.spellManager:CanCast("W") then
-		castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-			self.wTarget = self.ts.target
-		end
-	end
-
-	--check for valid target in range
-		--check if we can kill
-		--check if they are close enough to be W'd into a E and check pred on W if we can cast E then W
-		--check if they are slowed/stunned/rooted and can be hit by a full cast Q if so cast Q
-		--check if we are on worked ground and target can be hit by a single Q
-		--check if we need to peel the target off of ourselves or a ally (hp based and number of enemy/ally around) use W to peel
-		--check if we can pull/push them into a bad situation using our W
-		--check if they are close enough to be hit by our E and E if they are
-	--else
-		--loop through all enemys within max range (910) and check if valid, alive, etc
-			--check if we can kill
-			--check if they are close enough to be W'd into a E and check pred on W if we can cast E then W
-			--check if they are slowed/stunned/rooted and can be hit by a full cast Q if so cast Q
-			--check if we are on worked ground and target can be hit by a single Q
-			--check if we need to peel the target off of ourselves or a ally (hp based and number of enemy/ally around) use W to peel
-			--check if we can pull/push them into a bad situation using our W
-			--check if they are close enough to be hit by our E and E if they are
-end
-
-function ChampionTaliyah:HarassMode()
-	if self.ts.target == nil or self.ts.target:GetDistance(myHero) >= 910 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 910) then
-		--loop through team checks
-		return
-	end
-
-	if self.menu.harass.E and self.spellManager:CanCast("E") and GetDistance(myHero, self.ts.target) <= 570 then
-		--use E
-		--check if we can w into it
-		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			if self.menu.harass.W and self.spellManager:CanCast("W") and self.menu.harass.Wmine then
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			end
-		end
-	end
-
-	if self.menu.harass.Q and GetDistance(myHero, self.ts.target) <= 910 then
-		if self.menu.harass.Qnew and not onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		elseif self.menu.harass.Qused and onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		end
-	end
-
-	if self.menu.harass.W and self.spellManager:CanCast("W") then
-		castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-			self.wTarget = self.ts.target
-		end
-	end
-end
-
-function ChampionTaliyah:LastHitMode()
-	if self.ts.target == nil or self.ts.target:GetDistance(myHero) >= 910 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 910) then
-		--loop through team checks
-		return
-	end
-
-	if self.menu.lasthit.E and self.spellManager:CanCast("E") and GetDistance(myHero, self.ts.target) <= 570 then
-		--use E
-		--check if we can w into it
-		castPosE, hitChanceE, heroPosE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			if self.menu.lasthit.W and self.spellManager:CanCast("W") and self.menu.lasthit.Wmine then
-				castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					self.wTarget = self.ts.target
-				end
-			end
-		end
-	end
-
-	if self.menu.harass.Q and GetDistance(myHero, self.ts.target) <= 910 then
-		if self.menu.lasthit.Qnew and not onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		elseif self.menu.lasthit.Qused and onWorkedGround then
-			castPosQ, hitChanceQ, heroPosQ = UPL:Predict(_Q, myHero, self.ts.target)
-			if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance then
-				self.spellManager:CastSpellPosition(castPosQ, _Q)
-			end
-		end
-	end
-
-	if self.menu.lasthit.W and self.spellManager:CanCast("W") then
-		castPosW, hitChanceW, heroPosW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-			self.wTarget = self.ts.target
-		end
-	end
-end
-
-function ChampionTaliyah:Damage(spellText)
-	if spellText == "Q" then
-		spellLevel = GetSpellData(_Q).level
-		levelDamage = {60,80,100,120,140}
-		myApScale = myHero.ap * 0.4
-		if not onWorkedGround then
-			levelDamage = {180,240,300,360,420}
-			myApScale = myHero.ap * 1.2
-		end
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spellText == "W" then
-		spellLevel = GetSpellData(_W).level
-		levelDamage = {60,80,100,120,140}
-		myApScale = myHero.ap * 0.4
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spellText == "E" then
-		spellLevel = GetSpellData(_E).level
-		levelDamage = {40,52.5,65,77.5,90}
-		myApScale = myHero.ap * 0.2
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	end
-end
-
-function OnCreateObj(obj)
-	if obj and myHero.charName == "Taliyah" then
-		if obj.name:find("Taliyah_Base_Q") and not WorkedGroundIsKnown(obj) then
-			tmpT = {
-				obje = obj,
-				expire = os.clock() + 180
-			}
-			table.insert(usedGround, tmpT)
-		end
-	end
-end
-
-function WorkedGroundIsKnown(obj)
-	if myHero.charName == "Taliyah" then
-		for i, worked in pairs(usedGround) do
-			if worked and worked.obje then
-				if worked.obje == obj then
-					return true
-				end
-			else
-				table.remove(usedGround, i)
-			end
-		end
-		return false
-	end
-end
-
-class("ChampionAhri")
-function ChampionAhri:__init()
-	self.ver = 1001
-
-	self.menu = scriptConfig("Zer0 Bundle - Ahri", "003dataAhri")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode *SOON*", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Rmana", "% Mana for R", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-		self.menu.harass:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-		self.menu.harass:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.lasthit:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-		self.menu.lasthit:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.laneclear:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Kill Secure <-", "ks")
-		self.menu.ks:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.ks:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.ks:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.ks:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Auto R <-", "r")
-		self.menu.r:addParam("R", "Use R To Evade", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Auto Level Settings <-", "autoLevel")
-		self.menu.autoLevel:addParam("on", "Enabled *Requires Reload*", SCRIPT_PARAM_ONOFF, false)
-		self.menu.autoLevel:addParam("priority", "Level Priority", SCRIPT_PARAM_LIST, 1, {"AP Q Build", "AP E Build"})
-
-	if self.menu.autoLevel.on then
-		local seq = {}
-		if self.menu.autoLevel.priority == "AP Q Build" then
-			seq = {_W, _Q, _W, _E, _W, _R, _W, _Q, _W, _Q, _R, _Q, _Q, _E, _E, _R, _E, _E}
-		elseif self.menu.autoLevel.priority == "AP E Build" then
-			seq = {_Q, _W, _Q, _E, _Q, _R, _Q, _W, _Q, _W, _R, _W, _W, _E, _E, _R, _E, _E}
-		end
-		AutoLeveler(seq)
-	end
-
-	self.menu:addSubMenu("-> Dash Logic <-", "dash")
-		for _,v in pairs(GetEnemyHeroes()) do
-			if v then
-				self.menu.dash:addParam(v.charName, v.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-
-	_G.UPL:AddSpell(_Q, { speed = 1600, delay = 0.25, range = 880, width = 85, collision = false, aoe = true, type = "linear" })
-	_G.UPL:AddSpell(_E, { speed = 1600, delay = 0.3, range = 975, width = 60, collision = true, aoe = false, type = "linear" })
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 880, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 880, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 880, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 880, myHero, MINION_SORT_HEALTH_ASC)
-
-	self.spellManager = SpellMaster()
-
-	AddDrawCallback(function() self:OnDraw() end)
-	AddTickCallback(function() self:OnTick() end)
-	AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-end
-
-function ChampionAhri:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit == nil or endPos == nil or not self.spellManager:CanCast("E") or not isDash or unit.team == myHero.team or unit.type ~= myHero.type then
-		return
-	end
-
-	if GetDistance(endPos, myHero.pos) < 880 then
-		self.spellManager:CastSpellPosition(endPos, _E)
-		PrintPretty("Casting [E] for dash from [" .. unit.charName .. "]", self.menu.debug.dash, true)
-	end
-end
-
-function ChampionAhri:OnTick()
-	self.ts:update()
-	self.autoKillTs:update()
-	self.jungleMinions:update()
-	self.enemyMinions:update()
-
-	self:KillSteal()
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
-	end
-end
-
-function ChampionAhri:ComboMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 975 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 975) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.combo.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 975 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.combo.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 880 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-
-	if self.spellManager:CanCast("W") and self.menu.combo.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Wmana and GetDistance(myHero, self.ts.target) <= 550 then
-		self.spellManager:CastSpell(_W)
-	end
-end
-
-function ChampionAhri:HarassMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 975 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 975) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.harass.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 975 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.harass.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 880 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionAhri:LastHitMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.lasthit.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.lasthit.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionAhri:LaneClearMode()
-	if not self.enemyMinions.target or self.enemyMinions.target == nil or GetDistance(myHero.pos, self.enemyMinions.target.pos) >= 1250 or self.enemyMinions.target.dead or self.enemyMinions.target.health < 1 or not ValidTarget(self.enemyMinions.target, 1200) then
-		return
-	end
-
-	if self.spellManager:CanCast("W") and self.menu.laneclear.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.laneclear.Wmana and GetDistance(myHero, self.enemyMinions.target) <= 525 then
-		self.spellManager:CastSpell(_W)
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.laneclear.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.laneclear.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.enemyMinions.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 880 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionAhri:Damage(spell)
-	if spell == "Q" then
-		spellLevel = GetSpellData(_Q).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {40,65,90,115,140}
-		myApScale = myHero.ap * .35
-		damage = myApScale + levelDamage[spellLevel]
-		return damage
-	elseif spell == "W" then
-		spellLevel = GetSpellData(_W).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {40,65,90,115,140}
-		myApScale = myHero.ap * .4
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spell == "E" then
-		spellLevel = GetSpellData(_E).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {60,95,130,165,200}
-		myApScale = myHero.ap * .5
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spell == "R" then
-		spellLevel = GetSpellData(_R).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {70,110,150}
-		myApScale = myHero.ap * .3
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	end
-end
-
-function ChampionAhri:KillSteal()
-	if self.autoKillTs.target == nil or self.autoKillTs.target:GetDistance(myHero) >= 875 or self.autoKillTs.target.dead or self.autoKillTs.target.health < 1 or not ValidTarget(self.autoKillTs.target, 875) then
-		return
-	end
-
-	local damage = {
-		q = self:Damage("Q"),
-		w = self:Damage("W"),
-		e = self:Damage("E"),
-		qw = self:Damage("Q") + self:Damage("W"),
-		qe = self:Damage("Q") + self:Damage("E"),
-		we = self:Damage("W") + self:Damage("E"),
-		qwe = self:Damage("W") + self:Damage("Q") + self:Damage("E")
-	}
-
-	if damage.w > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_W) and GetDistance(myHero, self.autoKillTs.target) <= 525 then
-		self.spellManager:CastSpell(_W)
-	elseif damage.q > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 875 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.e > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_E) then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 975 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	elseif damage.qw > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) and GetDistance(myHero, self.autoKillTs.target) <= 525 then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 875) then
-			self.spellManager:CastSpell(_W)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.we > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_E) and self.spellManager:CanCast(_W) and GetDistance(myHero, self.autoKillTs.target) <= 525 then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		if (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 875) then
-			self.spellManager:CastSpell(_W)
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	elseif damage.qwe > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_E) and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_Q) and GetDistance(myHero, self.autoKillTs.target) <= 525 then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 875) and (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 875) then
-			self.spellManager:CastSpell(_W)
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionAhri:OnDraw()
-	if self.menu.draw.target and self.ts.target ~= nil and self.ts.target.health > 0 and not self.ts.target.dead then
-		DrawCircle3D(self.ts.target.x, self.ts.target.y, self.ts.target.z, 175, 4, ColorCodes.Blue, 52)
-	end
-
-	if self.menu.draw.target and self.autoKillTs.target ~= nil and self.autoKillTs.target.health > 0 and not self.autoKillTs.target.dead then
-		DrawCircle3D(self.autoKillTs.target.x, self.autoKillTs.target.y, self.autoKillTs.target.z, 175, 4, ColorCodes.Red, 52)
-	end
-
-	if self.menu.draw.w and self.spellManager:CanCast("W") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 1200, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.damage then
-		local damage = {
-			q = self:Damage("Q"),
-			w = self:Damage("W"),
-			e = self:Damage("E"),
-			qw = self:Damage("Q") + self:Damage("W"),
-			qe = self:Damage("Q") + self:Damage("E"),
-			we = self:Damage("W") + self:Damage("E"),
-			qwe = self:Damage("W") + self:Damage("Q") + self:Damage("E")
-		}
-		for _,v in pairs(GetEnemyHeroes()) do
-			if ValidTarget(v) then
-				local barPos = GetUnitHPBarPos(v)
-				local barOffset = GetUnitHPBarOffset(v)
-				do
-					local t = {
-						["Darius"] = -0.05,
-						["Renekton"] = -0.05,
-						["Sion"] = -0.05,
-						["Thresh"] = 0.03,
-						["Jhin"] = -0.06,
-						['AniviaEgg'] = -0.1,
-						["Annie"] = -0.25
-					}
-					barOffset.x = t[v.charName] or 0
-				end
-				local baseX = barPos.x - 69 + barOffset.x * 150
-				local baseY = barPos.y + barOffset.y * 50 + 12.5
-
-				if v.charName == "Jhin" then 
-					baseY = baseY - 12
-				end
-				
-				local myDamage = 0
-				local comboNeeded = nil
-				if (self.menu.combo.E and self.spellManager:CanCast("E") and self.menu.combo.Q and self.spellManager:CanCast("Q") and self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = damage.qwe
-					comboNeeded = "Q-W-E"
-				elseif (self.menu.combo.Q and self.spellManager:CanCast("Q") and self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = damage.qw
-					comboNeeded = "Q-W"
-				elseif (self.menu.combo.E and self.spellManager:CanCast("E") and self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = damage.we
-					comboNeeded = "W-E"
-				elseif (self.menu.combo.Q and self.spellManager:CanCast("Q") and self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = damage.qe
-					comboNeeded = "Q-E"
-				elseif (self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = damage.w
-					comboNeeded = "W"
-				elseif (self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = damage.e
-					comboNeeded = "E"
-				elseif (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = damage.q
-					comboNeeded = "Q"
-				end
-
-				local dmgperc = myDamage/v.health*100
-				local enemyhpperc = v.health/v.maxHealth
-				
-				if dmgperc < 100 then
-					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				else
-					DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-					DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				end
-				
-			end
-		end
-	end
-end
-
-class("ChampionSoraka")
-function ChampionSoraka:__init()
-	self.ver = 1001
-
-	self.menu = scriptConfig("Zer0 Bundle - Soraka", "003dataSoraka")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode *SOON*", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-		self.menu.harass:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.lasthit:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.laneclear:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Kill Secure <-", "ks")
-		self.menu.ks:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.ks:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
-
-	self.menu:addSubMenu("-> Auto W <-", "w")
-		self.menu.w:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		for _,v in pairs(GetAllyHeroes()) do
-			if v then
-				self.menu.w:addParam(v.charName, "Heal " .. v.charName, SCRIPT_PARAM_ONOFF, true)
-				self.menu.w:addParam(v.charName.."perc", "Heal " .. v.charName .. " Below HP %", SCRIPT_PARAM_SLICE, 80, 0, 100, 0)
-				self.menu.w:addParam(v.charName.."mana", "Heal " .. v.charName .. " Above Mana %", SCRIPT_PARAM_SLICE, 20, 0, 100, 0)
-			end
-		end
-
-	self.menu:addSubMenu("-> Auto R <-", "r")
-		self.menu.r:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-		for _,v in pairs(GetAllyHeroes()) do
-			if v then
-				self.menu.r:addParam(v.charName, "Heal " .. v.charName, SCRIPT_PARAM_ONOFF, true)
-				self.menu.r:addParam(v.charName.."perc", "Heal " .. v.charName .. " Below HP %", SCRIPT_PARAM_SLICE, 20, 0, 100, 0)
-				self.menu.r:addParam(v.charName.."mana", "Heal " .. v.charName .. " Above Mana %", SCRIPT_PARAM_SLICE, 10, 0, 100, 0)
-			end
-		end
-
-	self.menu:addSubMenu("-> Auto Level Settings <-", "autoLevel")
-		self.menu.autoLevel:addParam("on", "Enabled *Requires Reload*", SCRIPT_PARAM_ONOFF, false)
-		self.menu.autoLevel:addParam("priority", "Level Priority", SCRIPT_PARAM_LIST, 1, {"AP W Build", "AP Q Build"})
-
-	if self.menu.autoLevel.on then
-		local seq = {}
-		if self.menu.autoLevel.priority == "AP W Build" then
-			seq = {_W, _Q, _W, _E, _W, _R, _W, _Q, _W, _Q, _R, _Q, _Q, _E, _E, _R, _E, _E}
-		elseif self.menu.autoLevel.priority == "AP Q Build" then
-			seq = {_Q, _W, _Q, _E, _Q, _R, _Q, _W, _Q, _W, _R, _W, _W, _E, _E, _R, _E, _E}
-		end
-		AutoLeveler(seq)
-	end
-
-	self.menu:addSubMenu("-> Dash Logic <-", "dash")
-		for _,v in pairs(GetEnemyHeroes()) do
-			if v then
-				self.menu.dash:addParam(v.charName, v.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-
-	_G.UPL:AddSpell(_Q, { speed = 1600, delay = 0.5, range = 770, width = 110, collision = false, aoe = true, type = "circular" })
-	_G.UPL:AddSpell(_E, { speed = 2000, delay = 0.6, range = 880, width = 25, collision = false, aoe = true, type = "circular" })
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 880, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 880, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 880, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 880, myHero, MINION_SORT_HEALTH_ASC)
-
-	self.spellManager = SpellMaster()
-
-	AddTickCallback(function() self:OnTick() end)
-	AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-end
-
-function ChampionSoraka:HealAmount(skill)
-	if skill == "W" then
-		spellLevel = GetSpellData(_W).level
-		if spellLevel == 0 then return 0 end
-		levelHealing = {80,110,140,170,220}
-		myApScale = myHero.ap * .6
-		healing = levelHealing[spellLevel] + myApScale
-		return healing
-	elseif skill == "R" then
-		spellLevel = GetSpellData(_R).level
-		if spellLevel == 0 then return 0 end
-		levelHealing = {150,250,350}
-		myApScale = myHero.ap * .55
-		healing = levelHealing[spellLevel] + myApScale
-		return healing
-	end
-end
-
-function ChampionSoraka:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit == nil or endPos == nil or not self.spellManager:CanCast("E") or not isDash or unit.team == myHero.team or unit.type ~= myHero.type then
-		return
-	end
-
-	if GetDistance(endPos, myHero.pos) < 880 then
-		self.spellManager:CastSpellPosition(endPos, _E)
-		PrintPretty("Casting [E] for dash from [" .. unit.charName .. "]", self.menu.debug.dash, true)
-	end
-end
-
-function ChampionSoraka:OnTick()
-	self.ts:update()
-
-	if (self.menu.w.W and self.spellManager:CanCast("W")) or (self.menu.r.R and self.spellManager:CanCast("R")) then
-		for _,h in ipairs(GetAllyHeroes()) do
-			if h and h.health > 0 and not h.dead then
-				if self.menu.w.W and self.spellManager:CanCast("W") and self.menu.w[h.charName] and self.menu.w[h.charName.."perc"] >= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.w[h.charName.."mana"] and GetDistance(h,myHero) <= 540 then
-					self.spellManager:CastSpellTarget(h, _W)
-					break
-				end
-				if self.menu.r.R and self.spellManager:CanCast("R") and self.menu.r[h.charName] and self.menu.r[h.charName.."perc"] >= (h.health*100)/h.maxHealth and (myHero.mana*100)/myHero.maxMana >= self.menu.r[h.charName.."mana"] then
-					self.spellManager:CastSpell(_R)
-					break
-				end
-			end
-		end
-	end
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
-	end
-end
-
-function ChampionSoraka:ComboMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.combo.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.combo.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionSoraka:HarassMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.harass.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.harass.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionSoraka:LastHitMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
-	end
-
-	if self.spellManager:CanCast("E") and self.menu.lasthit.E and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.lasthit.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionSoraka:LaneClearMode()
+_G.azBundle.ChampionData = ChampionData()
+--[[-----------------------------------------------------
+-----------------------/CHAMP DATA-----------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+-----------------------ORBWALKER-------------------------
+-----------------------------------------------------]]--
+class("OrbwalkManager")
+function OrbwalkManager:__init()
+	self.sacDetected = false
+	self.sacPDetected = false
+	self.pewDetected = false
+	self.nebiDetected = false
+	self.s1Detected = false
+	self.sxDetected = false
+	self.isSacReady = false
 	
-end
-
-class("ChampionAshe")
-function ChampionAshe:__init()
-	self.ver = 1002
-
-	self.menu = scriptConfig("Zer0 Bundle - Ashe", "003dataAshe")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode *SOON*", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-		self.menu.combo:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Rmana", "% Mana for E", SCRIPT_PARAM_SLICE, 0, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-		self.menu.harass:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.lasthit:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.laneclear:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Wmana", "% Mana for W", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Kill Secure <-", "ks")
-		self.menu.ks:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.ks:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Auto E <-", "e")
-		self.menu.e:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.e:addParam("Ebush", "Use E in Bush", SCRIPT_PARAM_ONOFF, true)
-		self.menu.e:addParam("Efow", "Use E in FoW", SCRIPT_PARAM_ONOFF, true)
-		for _,v in pairs(GetEnemyHeroes()) do
-			if v then
-				self.menu.e:addParam(v.charName, "Reveal " .. v.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-
-	self.menu:addSubMenu("-> Auto Level Settings <-", "autoLevel")
-		self.menu.autoLevel:addParam("on", "Enabled *Requires Reload*", SCRIPT_PARAM_ONOFF, false)
-		self.menu.autoLevel:addParam("priority", "Level Priority", SCRIPT_PARAM_LIST, 1, {"AD W Build", "AD Q Build"})
-
-	if self.menu.autoLevel.on then
-		local seq = {}
-		if self.menu.autoLevel.priority == "AD W Build" then
-			seq = {_W, _Q, _W, _E, _W, _R, _W, _Q, _W, _Q, _R, _Q, _Q, _E, _E, _R, _E, _E}
-		elseif self.menu.autoLevel.priority == "AD Q Build" then
-			seq = {_Q, _W, _Q, _E, _Q, _R, _Q, _W, _Q, _W, _R, _W, _W, _E, _E, _R, _E, _E}
-		end
-		AutoLeveler(seq)
-	end
-
-	self.menu:addSubMenu("-> Dash Logic <-", "dash")
-		for _,v in pairs(GetEnemyHeroes()) do
-			if v then
-				self.menu.dash:addParam(v.charName, v.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-
-	_G.UPL:AddSpell(_W, { speed = 1600, delay = 0.3, range = 1200, width = 40, collision = true, aoe = false, type = "cone" })
-	_G.UPL:AddSpell(_R, { speed = 1550, delay = 0.3, range = 25000, width = 260, collision = true, aoe = false, type = "linear" })
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 1200, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 1200, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 1200, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 1200, myHero, MINION_SORT_HEALTH_ASC)
-
-	self.spellManager = SpellMaster()
-
-	self.fowTracker = {}
-	for _, e in ipairs(GetEnemyHeroes()) do
-		if e then
-			self.fowTracker[e.charName] = nil
-		end
-	end
-
-	AddDrawCallback(function() self:OnDraw() end)
-	AddTickCallback(function() self:OnTick() end)
-	AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-end
-
-function ChampionAshe:OnTick()
-	self.ts:update()
-	self.autoKillTs:update()
-	self.jungleMinions:update()
-	self.enemyMinions:update()
-
-	for _, e in ipairs(GetEnemyHeroes()) do
-		if e then
-			if e.dead or e.visible then
-				self.fowTracker[e.charName] = {
-					position = nil,
-					seen = 0,
-					obj = e
-				}
-			else
-				self.fowTracker[e.charName] = {
-					position = e.pos,
-					seen = os.clock(),
-					obj = e
-				}
-			end
-		end
-	end
-
-	if self.spellManager:CanCast("E") then
-		for _, cE in ipairs(self.fowTracker) do
-			if cE ~= nil and cE.seen ~= 0 and not cE.obj.dead and not cE.obj.visible and cE.seen and cE.position and os.clock() - cE.seen < 2 and cE.obj.endPath then
-				local point = NormalizeX(e.endPath, cE.obj, 100)
-				if IsWallOfGrass(D3DXVECTOR3(p.x,e.y,p.z)) and self.menu.e.Ebush then
-					self.spellManager:CastSpellPosition(cE.obj.pos, _E)
-					break
-				elseif self.menu.e.Efow then
-					self.spellManager:CastSpellPosition(cE.obj.pos, _E)
-					break
-				end
-			end
-		end
-	end
-
-	self:KillSteal()
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
+	if _G.Reborn_Loaded or _G.Reborn_Initialised or _G.AutoCarry ~= nil then
+		_G.azBundle.PrintManager:General("SAC:R detected.")
+		DelayAction(function()
+			self.sacDetected = true
+			self.isSacReady = true
+		end, 5)
+	elseif _G.S1OrbLoading or _G.S1mpleOrbLoaded then
+		self.s1Detected = true
+		G.azBundle.PrintManager:General("Simple Orb Walk detected.")
+	elseif SAC then
+		self.sacPDetected = true
+		G.azBundle.PrintManager:General("SAC:P detected.")
+	elseif _Pewalk then
+		self.pewDetected = true
+		G.azBundle.PrintManager:General("PeWalk detected.")
+	elseif _G.NebelwolfisOrbWalkerInit then
+		self.nebiDetected = true
+		G.azBundle.PrintManager:General("Nebelwolfid Orb Walk detected.")
+	elseif FileExist(LIB_PATH .. "SxOrbWalk.lua") then
+		self.sxDetected = true
+		require("SxOrbWalk")
+		G.azBundle.PrintManager:General("SXOrbWalk detected.")
+	else
+		G.azBundle.PrintManager:General("No known orbwalk detected. Please make sure to set up your keys to match the orb walkers keys.")
 	end
 end
 
-function ChampionAshe:ComboMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
-	end
-	if self.spellManager:CanCast("R") and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Rmana and self.menu.combo.R and UnitIsFleeingMe(self.ts.target) and (self.ts.target.maxHealth / 2) > self.ts.target.health then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.ts.target)
-		if castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and GetDistance(myHero.pos, castPosR) <= 15000 then
-			self.spellManager:CastSpellPosition(castPosR, _R)
-		end
-	end
-
-	if self.spellManager:CanCast("W") and self.menu.combo.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Wmana then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and GetDistance(myHero.pos, castPosW) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.combo.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.combo.Qmana then
-		if GetDistance(self.ts.target.pos, myHero.pos) <= myHero.range + 20 then
-			self.spellManager:CastSpell(_Q)
-		end
+function OrbwalkManager:ResetAA()
+	if self.sacDetected then
+		_G.AutoCarry.Orbwalker:ResetAttackTimer()
+	elseif self.nebiDetected then
+		_G.NebelwolfisOrbWalker:ResetAA()
+	elseif self.sxDetected then
+		_G.SxOrb:ResetAA()
 	end
 end
 
-function ChampionAshe:HarassMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
+function OrbwalkManager:DisableOrbWalkAttacks()
+	if self.sacDetected and self.isSacReady then
+		_G.AutoCarry.MyHero:AttacksEnabled(false)
+	elseif self.pewDetected then
+		 _Pewalk.AllowAttack(false)
+	elseif self.sxDetected then
+		 _G.SxOrb:DisableAttacks()
+	elseif self.nebiDetected then
+		 _G.NebelwolfisOrbWalker:SetOrb(false)
 	end
+	DelayAction(function()
+		EnableOrbWalkAttacks()
+	end, 1.75)
+end
 
-	if self.spellManager:CanCast("W") and self.menu.harass.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Wmana then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and GetDistance(myHero.pos, castPosW) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.harass.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.harass.Qmana then
-		if GetDistance(self.ts.target.pos, myHero.pos) <= myHero.range then
-			self.spellManager:CastSpell(_Q)
-		end
+function OrbwalkManager:EnableOrbWalkAttacks()
+	if self.sacDetected and self.isSacReady then
+		_G.AutoCarry.MyHero:AttacksEnabled(true)
+	elseif self.pewDetected then
+		 _Pewalk.AllowAttack(true)
+	elseif self.sxDetected then
+		 _G.SxOrb:EnableAttacks()
+	elseif self.nebiDetected then
+		 _G.NebelwolfisOrbWalker:SetOrb(true)
 	end
 end
 
-function ChampionAshe:LaneClearMode()
-	if not self.enemyMinions.target or self.enemyMinions.target == nil or GetDistance(myHero.pos, self.enemyMinions.target.pos) >= 1250 or self.enemyMinions.target.dead or self.enemyMinions.target.health < 1 or not ValidTarget(self.enemyMinions.target, 1200) then
-		return
+function OrbwalkManager:DisableOrbWalkMove()
+	if self.sacDetected and self.isSacReady then
+		_G.AutoCarry.MyHero:MovementEnabled(false)
+	elseif self.pewDetected then
+		 _Pewalk.AllowMove(false)
+	elseif self.sxDetected then
+		 _G.SxOrb:DisableMove()
+	elseif self.nebiDetected then
+		 _G.NebelwolfisOrbWalker:SetOrb(false)
 	end
+	DelayAction(function()
+		EnableOrbWalkMove()
+	end, 1.75)
+end
 
-	if self.spellManager:CanCast("W") and self.menu.laneclear.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.laneclear.Wmana then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.enemyMinions.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and GetDistance(myHero.pos, castPosW) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-		end
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.laneclear.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.laneclear.Qmana then
-		if GetDistance(self.enemyMinions.target.pos, myHero.pos) <= myHero.range then
-			self.spellManager:CastSpell(_Q)
-		end
+function OrbwalkManager:EnableOrbWalkMove()
+	if self.sacDetected and self.isSacReady then
+		_G.AutoCarry.MyHero:MovementEnabled(true)
+	elseif self.pewDetected then
+		 _Pewalk.AllowMove(true)
+	elseif self.sxDetected then
+		 _G.SxOrb:EnableMove()
+	elseif self.nebiDetected then
+		 _G.NebelwolfisOrbWalker:SetOrb(true)
 	end
 end
 
-function ChampionAshe:LastHitMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1200) then
-		return
+function OrbwalkManager:Mode()
+	if _G.azBundle.MenuManager.menu.Combo.key then
+		return "Combo"
 	end
-
-	if self.spellManager:CanCast("W") and self.menu.lasthit.W and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Wmana then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.ts.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and GetDistance(myHero.pos, castPosW) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-		end
+	if _G.azBundle.MenuManager.menu.Harass.key then
+		return "Harass"
 	end
-
-	if self.spellManager:CanCast("Q") and self.menu.lasthit.Q and ((myHero.mana*100)/myHero.maxMana) > self.menu.lasthit.Qmana then
-		if GetDistance(self.ts.target.pos, myHero.pos) <= myHero.range then
-			self.spellManager:CastSpell(_Q)
-		end
+	if _G.azBundle.MenuManager.menu.LaneClear.key then
+		return "LaneClear"
+	end
+	if _G.azBundle.MenuManager.menu.LastHit.key then
+		return "LastHit"
 	end
 end
 
-function ChampionAshe:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit == nil or endPos == nil or not self.spellManager:CanCast("W") or not isDash or unit.team == myHero.team or unit.type ~= myHero.type then
-		return
+function OrbwalkManager:Target()
+	if self.sacDetected then
+		return _G.AutoCarry.SkillsCrosshair.target
+	elseif self.nebiDetected then
+		return _G.NebelwolfisOrbWalker:GetTarget()
+	elseif self.pewDetected then
+		return _Pewalk.GetTarget()
+	elseif self.sxDetected then
+		return SxOrb:EnableAttacks()
+	else
+		return nil
 	end
+end
+--[[-----------------------------------------------------
+-----------------------/ORBWALKER------------------------
+-----------------------------------------------------]]--
 
-	if GetDistance(endPos, myHero.pos) < 1200 then
-		self.spellManager:CastSpellPosition(endPos, _W)
-		PrintPretty("Casting [W] for dash from [" .. unit.charName .. "]", self.menu.debug.dash, true)
+--[[-----------------------------------------------------
+---------------------LIB DOWNLOAD------------------------
+-----------------------------------------------------]]--
+local toDownload = {
+	["HPrediction"] = "https://raw.githubusercontent.com/BolHTTF/BoL/master/HTTF/Common/HPrediction.lua",
+	["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua"
+}
+
+local isDownloading = false
+local downloadCount = 0
+
+function LibDownloaderPrint(msg)
+	print("<font color=\"#FF794C\"><b>" .. _G.azBundle.ChampionData.scriptName .. "</b></font> <font color=\"#FFDFBF\"><b>"..msg.."</b></font>")
+end
+
+function FileDownloaded()
+	downloadCount = downloadCount - 1
+	if downloadCount == 0 then
+		isDownloading = false
+		LibDownloaderPrint("<font color=\"#6699FF\">Downloads complete. Please press F9 twice to reload.</font>")
 	end
 end
 
-function ChampionAshe:Damage(spell)
-	if spell == "Q" then
-		spellLevel = GetSpellData(_Q).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {23,24,25,26,27}
-		myAdScale = myHero.damage * levelDamage[spellLevel]
-		damage = myHero.damage + myAdScale
-		return damage
-	elseif spell == "W" then
-		spellLevel = GetSpellData(_W).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {20,35,50,65,80}
-		myAdScale = levelDamage[spellLevel]
-		damage = myHero.damage + myAdScale
-		return damage
-	elseif spell == "E" then
-		return 0
-	elseif spell == "R" then
-		spellLevel = GetSpellData(_R).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {250,425,600}
-		myApScale = myHero.ap
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
+for libName, libUrl in pairs(toDownload) do
+	if FileExist(LIB_PATH .. libName .. ".lua") then
+		require(libName)
+	else
+		isDownloading = true
+		downloadCount = downloadCount + 1
+		LibDownloaderPrint("<font color=\"#6699FF\">Downloading " .. libName .. ".</font>")
+		DownloadFile(libUrl, LIB_PATH .. libUrl .. ".lua", FileDownloaded)
 	end
 end
 
-function ChampionAshe:KillSteal()
-	if self.autoKillTs.target == nil or self.autoKillTs.target:GetDistance(myHero) >= 1250 or self.autoKillTs.target.dead or self.autoKillTs.target.health < 1 or not ValidTarget(self.autoKillTs.target, 1250) then
-		return
-	end
+if isDownloading then return end
 
-	local damage = {
-		q = self:Damage("Q"),
-		w = self:Damage("W"),
-		r = self:Damage("R"),
-		qw = self:Damage("Q") + self:Damage("W"),
-		qr = self:Damage("Q") + self:Damage("R"),
-		wr = self:Damage("W") + self:Damage("R"),
-		qwr = self:Damage("W") + self:Damage("R") + self:Damage("Q")
-	}
+VP = VPrediction()
+--[[-----------------------------------------------------
+--------------------/LIB DOWNLOAD------------------------
+-----------------------------------------------------]]--
 
-	if damage.w > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_W) then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.autoKillTs.target)
-		if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and myHero:GetDistance(castPosW) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosW, _W)
-		end
-	elseif damage.q > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.qw > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) then
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.autoKillTs.target)
-		if (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and myHero:GetDistance(castPosW) <= 1200) then
-			self.spellManager:CastSpellPosition(castPosE, _W)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.wr > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and myHero:GetDistance(castPosW) <= 1200) then
-			self.spellManager:CastSpellPosition(castPosE, _W)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-		end
-	elseif damage.qr > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosE) <= 1200) then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-		end
-	elseif damage.qwr > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_W) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and myHero:GetDistance(castPosW) <= 1200) then
-			self.spellManager:CastSpellPosition(castPosQ, _E)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
+--[[-----------------------------------------------------
+--------------------------MATH---------------------------
+-----------------------------------------------------]]--
+function round(num)
+	if num >= 0 then
+    	return math.floor(num + 0.5)
+	else
+    	return math.ceil(num - 0.5)
 	end
 end
 
-function ChampionAshe:OnDraw()
-	if self.menu.draw.target and self.ts.target ~= nil and self.ts.target.health > 0 and not self.ts.target.dead then
-		DrawCircle3D(self.ts.target.x, self.ts.target.y, self.ts.target.z, 175, 4, ColorCodes.Blue, 52)
-	end
-
-	if self.menu.draw.target and self.autoKillTs.target ~= nil and self.autoKillTs.target.health > 0 and not self.autoKillTs.target.dead then
-		DrawCircle3D(self.autoKillTs.target.x, self.autoKillTs.target.y, self.autoKillTs.target.z, 175, 4, ColorCodes.Red, 52)
-	end
-
-	if self.menu.draw.w and self.spellManager:CanCast("W") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 1200, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.damage then
-		for _,v in pairs(GetEnemyHeroes()) do
-			if ValidTarget(v) then
-				local barPos = GetUnitHPBarPos(v)
-				local barOffset = GetUnitHPBarOffset(v)
-				do
-					local t = {
-						["Darius"] = -0.05,
-						["Renekton"] = -0.05,
-						["Sion"] = -0.05,
-						["Thresh"] = 0.03,
-						["Jhin"] = -0.06,
-						['AniviaEgg'] = -0.1,
-						["Annie"] = -0.25
-					}
-					barOffset.x = t[v.charName] or 0
-				end
-				local baseX = barPos.x - 69 + barOffset.x * 150
-				local baseY = barPos.y + barOffset.y * 50 + 12.5
-
-				if v.charName == "Jhin" then 
-					baseY = baseY - 12
-				end
-				
-				local myDamage = 0
-				local comboNeeded = nil
-				if (self.menu.combo.R and self.spellManager:CanCast("R")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) and (self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = self:Damage("Q") + self:Damage("R") + self:Damage("W")
-					comboNeeded = "Full"
-				elseif (self.menu.combo.R and self.spellManager:CanCast("R")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("R")
-					comboNeeded = "Q-R"
-				elseif (self.menu.combo.W and self.spellManager:CanCast("W")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("W")
-					comboNeeded = "Q-W"
-				elseif (self.menu.combo.W and self.spellManager:CanCast("W")) and (self.menu.combo.R and self.spellManager:CanCast("R")) then
-					myDamage = self:Damage("R") + self:Damage("W")
-					comboNeeded = "R-W"
-				elseif (self.menu.combo.W and self.spellManager:CanCast("W")) then
-					myDamage = self:Damage("W")
-					comboNeeded = "W"
-				elseif (self.menu.combo.R and self.spellManager:CanCast("R")) then
-					myDamage = self:Damage("R")
-					comboNeeded = "R"
-				elseif (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q")
-					comboNeeded = "Q"
-				end
-
-				local dmgperc = myDamage/v.health*100
-				local enemyhpperc = v.health/v.maxHealth
-				
-				if dmgperc < 100 then
-					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				else
-					DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-					DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				end
-				
-			end
-		end
-	end
-end
-
-class("ChampionTeemo")
-function ChampionTeemo:__init()
-	self.ver = 1001
-
-	self.menu = scriptConfig("Zer0 Bundle - Teemo", "003dataTeemo")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode *SOON*", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Ignite", "Use Ignite", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, false)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("W", "Use W", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Auto Level Settings <-", "autoLevel")
-		self.menu.autoLevel:addParam("on", "Enabled *VIP* *SOON*", SCRIPT_PARAM_ONOFF, false)
-		self.menu.autoLevel:addParam("priority", "Level Priority", SCRIPT_PARAM_LIST, 1, {"E, Q, W", "E, W, Q", "Q, E, W", "Q, W, E", "W, E, Q", "W, Q, E"})
-
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 580, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 580, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 580, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 500, myHero, MINION_SORT_HEALTH_ASC)
-
-	self.spellManager = SpellMaster()
-
-	AddDrawCallback(function() self:OnDraw() end)
-	AddTickCallback(function() self:OnTick() end)
-	--AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-	--AddCastSpellCallback(function() self:CastSpellCB() end)
-	--AddProcessSpellCallback(function(object, spell) self:ProcessSpell(object, spell) end)
-end
-
-function ChampionTeemo:OnTick()
-	self.ts:update()
-	self.autoKillTs:update()
-	self.jungleMinions:update()
-	self.enemyMinions:update()
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
-	end
-end
-
-function ChampionTeemo:ComboMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 580 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 580) then
-		return
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.combo.Q then
-		self.spellManager:CastSpellTarget(self.ts, _Q)
-	end
-end
-
-function ChampionTeemo:HarassMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 580 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 580) then
-		return
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.harass.Q then
-		self.spellManager:CastSpellTarget(self.ts, _Q)
-	end
-end
-
-function ChampionTeemo:LaneClearMode()
-end
-
-function ChampionTeemo:LastHitMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 580 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 580) then
-		return
-	end
-
-	if self.spellManager:CanCast("Q") and self.menu.lasthit.Q then
-		self.spellManager:CastSpellTarget(self.ts, _Q)
-	end
-end
-
-function ChampionTeemo:OnDraw()
-	if self.menu.draw.target and self.ts.target ~= nil and self.ts.target.health > 0 and not self.ts.target.dead then
-		DrawCircle3D(self.ts.target.x, self.ts.target.y, self.ts.target.z, 175, 4, ColorCodes.Blue, 52)
-	end
-
-	if self.menu.draw.target and self.autoKillTs.target ~= nil and self.autoKillTs.target.health > 0 and not self.autoKillTs.target.dead then
-		DrawCircle3D(self.autoKillTs.target.x, self.autoKillTs.target.y, self.autoKillTs.target.z, 175, 4, ColorCodes.Red, 52)
-	end
-
-	if self.menu.draw.q and self.spellManager:CanCast("Q") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 580, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.damage then
-		for _,v in pairs(GetEnemyHeroes()) do
-			if ValidTarget(v) then
-				local barPos = GetUnitHPBarPos(v)
-				local barOffset = GetUnitHPBarOffset(v)
-				do
-					local t = {
-						["Darius"] = -0.05,
-						["Renekton"] = -0.05,
-						["Sion"] = -0.05,
-						["Thresh"] = 0.03,
-						["Jhin"] = -0.06,
-						['AniviaEgg'] = -0.1,
-						["Annie"] = -0.25
-					}
-					barOffset.x = t[v.charName] or 0
-				end
-				local baseX = barPos.x - 69 + barOffset.x * 150
-				local baseY = barPos.y + barOffset.y * 50 + 12.5
-
-				if v.charName == "Jhin" then 
-					baseY = baseY - 12
-				end
-				
-				local myDamage = 0
-				local comboNeeded = nil
-				myDamage = myHero:CalcDamage(v, myHero.totalDamage)
-				if(self.menu.combo.Q and self.spellManager:CanCast("Q")) and self.spellManager:CanCast("E") then
-					myDamage = myDamage + self:Damage("Q", v) + self:Damage("E", v)
-					comboNeeded = "Q-E-AA"
-				elseif(self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = myDamage + self:Damage("Q", v)
-					comboNeeded = "Q-AA"
-				elseif(self.spellManager:CanCast("E")) then
-					myDamage = myDamage + self:Damage("E", v)
-					comboNeeded = "E-AA"
-				end
-
-				local dmgperc = myDamage/v.health*100
-				local enemyhpperc = v.health/v.maxHealth
-				
-				if dmgperc < 100 then
-					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				else
-					DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-					DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				end
-				
-			end
-		end
-	end
-end
-
-function ChampionTeemo:Damage(spellText, unit)
-	if spellText == "Q" then
-		spellLevel = GetSpellData(_Q).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {60,105,150,195,240}
-		myApScale = myHero.ap * 0.8
-		damage = levelDamage[spellLevel] + myApScale
-		return myHero:CalcMagicDamage(unit,damage)
-	elseif spellText == "E" then
-		spellLevel = GetSpellData(_E).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {24, 48, 72, 96, 120}
-		myApScale = myHero.ap * 0.4
-		damage = levelDamage[spellLevel] + myApScale
-		return myHero:CalcMagicDamage(unit,damage)
-	end
-end
-
-class("ChampionLux")
-function ChampionLux:__init()
-	self.ver = 1004
-
-	--PrintPretty("Loaded Lux [v" .. self.ver .. "]", true, false)
-
-	self.eState = function() return myHero:GetSpellData(_E).name ~= "LuxLightStrikeKugel" end
-
-	self.menu = scriptConfig("Zer0 Bundle - Lux", "003dataLux")
-	self.menu:addSubMenu("-> Extra Keys <-", "keys")
-		self.menu.keys:addParam("flee", "Flee Mode *SOON*", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte( 'T' ))
-
-	self.menu:addSubMenu("-> Combo Logic <-", "combo")
-		self.menu.combo:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.combo:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.combo:addParam("R", "Use R", SCRIPT_PARAM_ONOFF, true)
-		self.menu.combo:addParam("Ignite", "Use Ignite", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Harass Logic <-", "harass")
-		self.menu.harass:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.harass:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.harass:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Harass 2 Logic <-", "lasthit")
-		self.menu.lasthit:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.lasthit:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, false)
-		self.menu.lasthit:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> Lane Clear Logic <-", "laneclear")
-		self.menu.laneclear:addParam("Q", "Use Q", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Qmana", "% Mana for Q", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-		self.menu.laneclear:addParam("E", "Use E", SCRIPT_PARAM_ONOFF, true)
-		self.menu.laneclear:addParam("Emana", "% Mana for E", SCRIPT_PARAM_SLICE, 75, 0, 100, 0)
-
-	self.menu:addSubMenu("-> R Settings <-", "r")
-		self.menu.r:addParam("r", "Enabled", SCRIPT_PARAM_ONOFF, true)
-		self.menu.r:addParam("stunned", "Only R Stunned Targets *SOON*", SCRIPT_PARAM_ONOFF, false)
-
-	self.menu:addSubMenu("-> Auto Level Settings <-", "autoLevel")
-		self.menu.autoLevel:addParam("on", "Enabled *VIP* *SOON*", SCRIPT_PARAM_ONOFF, false)
-		self.menu.autoLevel:addParam("priority", "Level Priority", SCRIPT_PARAM_LIST, 1, {"E, Q, W", "E, W, Q", "Q, E, W", "Q, W, E", "W, E, Q", "W, Q, E"})
-
-	self.menu:addSubMenu("-> Auto Steal Settings <-", "steal")
-		self.menu.steal:addParam("jungle", "Steal Jungle", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte( 'Y' ))
-		self.menu.steal:addParam("dragon", "Steal Dragon", SCRIPT_PARAM_ONOFF, true)
-		self.menu.steal:addParam("baron", "Steal Baron", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Auto Sheild Settings <-", "sheild")
-		self.menu.steal:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Dash Logic <-", "dash")
-		for _,v in pairs(GetEnemyHeroes()) do
-			if v then
-				self.menu.dash:addParam(v.charName, v.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-
-	self.menu:addSubMenu("-> Draw <-", "draw")
-		self.menu.draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("damage", "Predicted Damage", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, true)
-		self.menu.draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
-
-	self.menu:addSubMenu("-> Debug <-", "debug")
-		self.menu.debug:addParam("dash", "Hide Dash Prints", SCRIPT_PARAM_ONOFF, false)
-
-
-	_G.UPL:AddSpell(_Q, { speed = 1200, delay = 0.25, range = 1200, width = 125, collision = true, aoe = false, type = "linear" })
-	_G.UPL:AddSpell(_W, { speed = 1630, delay = 0.25, range = 1230, width = 205, collision = false, aoe = false, type = "linear" })
-	_G.UPL:AddSpell(_E, { speed = 1300, delay = 0.25, range = 1075, width = 320, collision = false, aoe = true, type = "circular" })
-	_G.UPL:AddSpell(_R, { speed = math.huge, delay = 1, range = 3340, width = 245, collision = false, aoe = false, type = "linear" })
-
-	self.ts = TargetSelector(TARGET_LESS_CAST, 1200, DAMAGE_MAGIC, true)
-	self.autoKillTs = TargetSelector(TARGET_LOW_HP, 3330, DAMAGE_MAGIC, true)
-	self.jungleMinions = minionManager(MINION_JUNGLE, 3330, myHero, MINION_SORT_MAXHEALTH_DEC)
-	self.enemyMinions = minionManager(MINION_ENEMY, 1075, myHero, MINION_SORT_HEALTH_ASC)
-	self.eCastPos = nil
-
-	self.spellManager = SpellMaster()
-
-	self.Q = (myHero:CanUseSpell(_Q) == READY)
-	self.W = (myHero:CanUseSpell(_W) == READY)
-	self.E = (myHero:CanUseSpell(_E) == READY)
-	self.R = (myHero:CanUseSpell(_R) == READY)
-
-	AddDrawCallback(function() self:OnDraw() end)
-	AddTickCallback(function() self:OnTick() end)
-	AddNewPathCallback(function(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) self:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance) end)
-	AddCastSpellCallback(function() self:CastSpellCB() end)
-	AddProcessSpellCallback(function(object, spell) self:ProcessSpell(object, spell) end)
-end
-
-function ChampionLux:OnTick()
-	self.ts:update()
-	self.autoKillTs:update()
-	self.jungleMinions:update()
-	self.enemyMinions:update()
-
-	self.Q = (myHero:CanUseSpell(_Q) == READY)
-	self.W = (myHero:CanUseSpell(_W) == READY)
-	self.E = (myHero:CanUseSpell(_E) == READY)
-	self.R = (myHero:CanUseSpell(_R) == READY)
-
-	self:KillSteal()
-	self:JungleSteal()
-
-	if self:eState() and self.eCastPos ~= nil then
-		for i, enemy in ipairs(GetEnemyHeroes()) do
-			if ValidTarget(enemy) and GetDistance(enemy, self.eCastPos) <= 320 then
-				self.spellManager:CastSpell(_E)
-			end
-		end
-		for _, jg in ipairs(self.jungleMinions.objects) do
-			if ValidTarget(jg) and GetDistance(jg, self.eCastPos) <= 320 then
-				self.spellManager:CastSpell(_E)
-			end
-		end
-		for _, minion in ipairs(self.enemyMinions.objects) do
-			if ValidTarget(minion) and GetDistance(minion, self.eCastPos) <= 320 then
-				self.spellManager:CastSpell(_E)
-			end
-		end
-	end
-
-	if self.menu.keys.flee then
-		self:FleeMode()
-		return
-	end
-
-	if self.spellManager:CanCast("W") and self.menu.sheild.W then
-		for _, fHero in ipairs(GetAllyHeroes()) do
-			if fHero and fHero:GetDistance(myHero) <= 1230 and not fHero.dead and fHero.health > 0 and (fHero.maxHealth * fHero.health) / fHero.maxHealth < 25 and endCountEnemyInRange(700, fHero) >= 1 then
-				castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, fHero)
-				if castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and GetDistance(myHero.pos, castPosW) <= 1230 then
-					self.spellManager:CastSpellPosition(castPosW, _W)
-					PrintPretty("Casting [W] to help [" .. fHero.charName .. "].", true, true)
-				end
-			end
-		end
-	end
-
-	if UOL:GetOrbWalkMode() == "Combo" then
-		self:ComboMode()
-	elseif UOL:GetOrbWalkMode() == "Harass" then
-		self:HarassMode()
-	elseif UOL:GetOrbWalkMode() == "LaneClear" then
-		self:LaneClearMode()
-	elseif UOL:GetOrbWalkMode() == "LastHit" then
-		self:LastHitMode()
-	end
-end
-
-function ChampionLux:OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit == nil or endPos == nil or not self.spellManager:CanCast("Q") or not isDash or unit.team == myHero.team or unit.type ~= myHero.type then
-		return
-	end
-
-	if GetDistance(endPos, myHero.pos) < 1200 then
-		CastSpell(_E, endPos.x, endPos.z)
-		self.spellManager:CastSpellPosition(endPos, _Q)
-		PrintPretty("Casting [Q] for dash from [" .. unit.charName .. "]", self.menu.debug.dash, true)
-	end
-end
-
-function ChampionLux:ComboMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1250) then
-		return
-	end
-
-	if self.E and self.menu.combo.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.combo.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.Q and self.menu.combo.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.combo.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-
-	if self.R and self.menu.combo.R and self:Damage("R") >= self.ts.target.health then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.ts.target)
-		if castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and GetDistance(myHero.pos, castPosR) <= 3300 then
-			self.spellManager:CastSpellPosition(castPosR, _R)
-		end
-	end
-end
-
-function ChampionLux:HarassMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1250) then
-		return
-	end
-
-	if self.E and self.menu.harass.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.harass.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.Q and self.menu.harass.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.harass.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionLux:LastHitMode()
-	if not self.ts.target or self.ts.target == nil or GetDistance(myHero.pos, self.ts.target.pos) >= 1250 or self.ts.target.dead or self.ts.target.health < 1 or not ValidTarget(self.ts.target, 1250) then
-		return
-	end
-
-	if self.E and self.menu.lasthit.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.lasthit.Emana then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.ts.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and GetDistance(myHero.pos, castPosE) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	end
-
-	if self.Q and self.menu.lasthit.Q and (myHero.mana * myHero.maxMana / 100) >= self.menu.lasthit.Qmana then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.ts.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and GetDistance(myHero.pos, castPosQ) <= 1200 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	end
-end
-
-function ChampionLux:LaneClearMode()
-	if self.E and self.menu.laneclear.E and (myHero.mana * myHero.maxMana / 100) >= self.menu.laneclear.Emana then
-		bestPos, bestHit = GetFarmPosition(1075, 320, self.enemyMinions.objects)
-		if bestPos and bestHit >= 3 and GetDistance(bestPos, myHero.pos) <=  1075 then
-			self.spellManager:CastSpellPosition(bestPos, _E)
-		end
-	end
-end
-
-function ChampionLux:KillSteal()
-	if self.autoKillTs.target == nil or self.autoKillTs.target:GetDistance(myHero) >= 1250 or self.autoKillTs.target.dead or self.autoKillTs.target.health < 1 or not ValidTarget(self.autoKillTs.target, 1250) then
-		return
-	end
-
-	local damage = {
-		q = self:Damage("Q"),
-		e = self:Damage("E"),
-		r = self:Damage("R"),
-		qe = self:Damage("Q") + self:Damage("E"),
-		qr = self:Damage("Q") + self:Damage("R"),
-		er = self:Damage("E") + self:Damage("R"),
-		qer = self:Damage("E") + self:Damage("R") + self:Damage("Q")
-	}
-
-	if damage.e > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_E) then
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		if castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-		end
-	elseif damage.q > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 1075 then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.qe > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_E) then
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		if (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 1200) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 1075) then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-		end
-	elseif damage.er > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_E) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 1075) then
-			self.spellManager:CastSpellPosition(castPosE, _E)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-		end
-	elseif damage.qr > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 1200) then
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-		end
-	elseif damage.qer > self.autoKillTs.target.health + (self.autoKillTs.target.health * .1) and self.spellManager:CanCast(_Q) and self.spellManager:CanCast(_E) and self.spellManager:CanCast(_R) then
-		castPosR, hitChanceR, heroPositionR = UPL:Predict(_R, myHero, self.autoKillTs.target)
-		castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, self.autoKillTs.target)
-		castPosQ, hitChanceQ, heroPositionQ = UPL:Predict(_Q, myHero, self.autoKillTs.target)
-		if (castPosR and hitChanceR >= _G.ZeroConfig.menu["Prediction"..myHero.charName].RHitChance and myHero:GetDistance(castPosR) <= 3330) and (castPosQ and hitChanceQ >= _G.ZeroConfig.menu["Prediction"..myHero.charName].QHitChance and myHero:GetDistance(castPosQ) <= 1200) and (castPosE and hitChanceE >= _G.ZeroConfig.menu["Prediction"..myHero.charName].EHitChance and myHero:GetDistance(castPosE) <= 1075) then
-			self.spellManager:CastSpellPosition(castPosQ, _E)
-			self.spellManager:CastSpellPosition(castPosQ, _Q)
-			self.spellManager:CastSpellPosition(castPosQ, _R)
-		end
-	end
-end
-
-function ChampionLux:CastSpellCB(iSpell, startPos, endPos, targetUnit)
-	if iSpell == 2 then
-		self.eCastPos = endPos
-	end
-end
-
-function ChampionLux:ProcessSpell(object, spell)
-	if object.team ~= myHero.team and spell.target ~= nil and self.spellManager:CanCast(_W) then
-		if spell.target:GetDistance(myHero) <= 1250 and spell.target.health > 0 and not spell.target.dead then
-			castPosW, hitChanceW, heroPositionW = UPL:Predict(_W, myHero, spell.target)
-			if (castPosW and hitChanceW >= _G.ZeroConfig.menu["Prediction"..myHero.charName].WHitChance and myHero:GetDistance(castPosW) <= 1250) then
-				self.spellManager:CastSpellPosition(castPosW, _W)
-			end
-		end
-	end
-end
-
-function ChampionLux:JungleSteal()
-	if not self.menu.steal.jungle then return end
-	self.jungleMinions:update()
-	for _, jg in ipairs(self.jungleMinions.objects) do
-		if jg and ValidTarget(jg, 3330) and ((self.menu.steal.dragon and jg.name:lower():find("dragon")) or (self.menu.steal.baron and jg.name:lower():find("baron"))) then
-			paddedHP = jg.health
-			for i, enemy in ipairs(GetEnemyHeroes()) do
-				if ValidTarget(enemy) and GetDistance(enemy, jg) <= 800 then
-					paddedHP = paddedHP - enemy.totalDamage
-				end
-			end
-
-			if self.spellManager:CanCast("R") then
-				if self:Damage("E")+self:Damage("R") >= paddedHP and self.spellManager:CanCast("E") and myHero:GetDistance(jg) <= 1065 then
-					castPosE, hitChanceE, heroPositionE = UPL:Predict(_E, myHero, jg)
-					castPosR, hitChanceR, heroPositionR = UPL:Predict(_E, myHero, jg)
-					if (castPosE and hitChanceE) and (castPosR and hitChanceR) then
-						self.spellManager:CastSpellPosition(castPosE, _E)
-						self.spellManager:CastSpellPosition(castPosR, _R)
-					end
-				elseif self:Damage("R") >= paddedHP and myHero:GetDistance(jg) <= 3330 then
-					castPosR, hitChanceR, heroPositionR = UPL:Predict(_E, myHero, jg)
-					if (castPosR and hitChanceR) then
-						self.spellManager:CastSpellPosition(castPosR, _R)
-					end
-				end
-			end
-		end
-	end
-end
-
-function ChampionLux:Damage(spellText)
-	if spellText == "Q" then
-		spellLevel = GetSpellData(_Q).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {60,110,160,210,260}
-		myApScale = myHero.ap * 0.7
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spellText == "W" then
-		spellLevel = GetSpellData(_W).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {0,0,0,0,0}
-		myApScale = myHero.ap * 0
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spellText == "E" then
-		spellLevel = GetSpellData(_E).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {60,105,150,195,240}
-		myApScale = myHero.ap * 0.6
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	elseif spellText == "R" then
-		spellLevel = GetSpellData(_R).level
-		if spellLevel == 0 then return 0 end
-		levelDamage = {300,400,500}
-		myApScale = myHero.ap * 0.75
-		damage = levelDamage[spellLevel] + myApScale
-		return damage
-	end
-end
-
-function ChampionLux:OnDraw()
-	if self.menu.draw.target and self.ts.target ~= nil and self.ts.target.health > 0 and not self.ts.target.dead then
-		DrawCircle3D(self.ts.target.x, self.ts.target.y, self.ts.target.z, 175, 4, ColorCodes.Blue, 52)
-	end
-
-	if self.menu.draw.target and self.autoKillTs.target ~= nil and self.autoKillTs.target.health > 0 and not self.autoKillTs.target.dead then
-		DrawCircle3D(self.autoKillTs.target.x, self.autoKillTs.target.y, self.autoKillTs.target.z, 175, 4, ColorCodes.Red, 52)
-	end
-
-	if self.menu.draw.q and self.spellManager:CanCast("Q") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 1200, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.w and self.spellManager:CanCast("W") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 1230, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.e and self.spellManager:CanCast("E") then
-		DrawCircle3D(myHero.pos.x, myHero.pos.y, myHero.pos.z, 1075, 4, ColorCodes.Gray, 52)
-	end
-
-	if self.menu.draw.damage then
-		for _,v in pairs(GetEnemyHeroes()) do
-			if ValidTarget(v) then
-				local barPos = GetUnitHPBarPos(v)
-				local barOffset = GetUnitHPBarOffset(v)
-				do
-					local t = {
-						["Darius"] = -0.05,
-						["Renekton"] = -0.05,
-						["Sion"] = -0.05,
-						["Thresh"] = 0.03,
-						["Jhin"] = -0.06,
-						['AniviaEgg'] = -0.1,
-						["Annie"] = -0.25
-					}
-					barOffset.x = t[v.charName] or 0
-				end
-				local baseX = barPos.x - 69 + barOffset.x * 150
-				local baseY = barPos.y + barOffset.y * 50 + 12.5
-
-				if v.charName == "Jhin" then 
-					baseY = baseY - 12
-				end
-				
-				local myDamage = 0
-				local comboNeeded = nil
-				if (self.menu.combo.R and self.spellManager:CanCast("R")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) and (self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = self:Damage("Q") + self:Damage("R") + self:Damage("E")
-					comboNeeded = "Full"
-				elseif (self.menu.combo.R and self.spellManager:CanCast("R")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("R")
-					comboNeeded = "Q-R"
-				elseif (self.menu.combo.E and self.spellManager:CanCast("E")) and (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q") + self:Damage("E")
-					comboNeeded = "Q-E"
-				elseif (self.menu.combo.E and self.spellManager:CanCast("E")) and (self.menu.combo.R and self.spellManager:CanCast("R")) then
-					myDamage = self:Damage("R") + self:Damage("E")
-					comboNeeded = "R-E"
-				elseif (self.menu.combo.E and self.spellManager:CanCast("E")) then
-					myDamage = self:Damage("E")
-					comboNeeded = "E"
-				elseif (self.menu.combo.R and self.spellManager:CanCast("R")) then
-					myDamage = self:Damage("R")
-					comboNeeded = "R"
-				elseif (self.menu.combo.Q and self.spellManager:CanCast("Q")) then
-					myDamage = self:Damage("Q")
-					comboNeeded = "Q"
-				end
-
-				local dmgperc = myDamage/v.health*100
-				local enemyhpperc = v.health/v.maxHealth
-				
-				if dmgperc < 100 then
-					DrawLine(baseX, baseY-10, baseX+(1.05*dmgperc)*enemyhpperc, baseY-10, 15, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				else
-					DrawLine(baseX, baseY-10, baseX+105*enemyhpperc, baseY-10, 15, ARGB(180,255,0,0))
-					DrawText("Killable - " .. comboNeeded, 18, baseX + 45, baseY-60, ARGB(180,2.55*dmgperc,0,-255+2.55*dmgperc))
-				end
-				
-			end
-		end
-	end
-end
-
---Classes
-class("SpellMaster")
-function SpellMaster:__init()
-	AddTickCallback(function() self:OnTick() end)
-	self.spells = {}
-	self.spells.Q = {
-		ready = false,
-		lastCast = os.clock()
-	}
-	self.spells.W = {
-		ready = false,
-		lastCast = os.clock()
-	}
-	self.spells.E = {
-		ready = false,
-		lastCast = os.clock()
-	}
-	self.spells.R = {
-		ready = false,
-		lastCast = os.clock()
-	}
-end
-
-function SpellMaster:OnTick()
-	self.spells.Q.ready = (myHero:CanUseSpell(_Q) == READY)
-	self.spells.W.ready = (myHero:CanUseSpell(_W) == READY)
-	self.spells.E.ready = (myHero:CanUseSpell(_E) == READY)
-	self.spells.R.ready = (myHero:CanUseSpell(_R) == READY)
-	--for k, v in ipairs(self.spells) do
-	--	if v.lastCast == nil then
-	--		v.lastCast = os.clock()
-	--	elseif v.lastCast < os.clock() + 2 then
-	--		self.spells[k].ready = false
-	--		print("Setting " .. k .. " to false")
-	--	end
-	--end
-end
-
-function SpellMaster:CastSpellPosition(position, spell)
-	if position ~= nil and spell ~= nil then
-		if spell == _Q then
-			self.spells.Q.lastCast = os.clock()
-			self.spells.Q.ready = false
-		elseif spell == _W then
-			self.spells.W.lastCast = os.clock()
-			self.spells.W.ready = false
-		elseif spell == _E then
-			self.spells.E.lastCast = os.clock()
-			self.spells.E.ready = false
-		elseif spell == _R then
-			self.spells.R.lastCast = os.clock()
-			self.spells.R.ready = false
-		end
-		CastSpell(spell, position.x, position.z)
-	end
-end
-
-function SpellMaster:CastSpellTarget(target, spell)
-	if target ~= nil and spell ~= nil then
-		if spell == _Q then
-			self.spells.Q.lastCast = os.clock()
-			self.spells.Q.ready = false
-		elseif spell == _W then
-			self.spells.W.lastCast = os.clock()
-			self.spells.W.ready = false
-		elseif spell == _E then
-			self.spells.E.lastCast = os.clock()
-			self.spells.E.ready = false
-		elseif spell == _R then
-			self.spells.R.lastCast = os.clock()
-			self.spells.R.ready = false
-		end
-		CastSpell(spell, target)
-	end
-end
-
-function SpellMaster:CastSpell(spell)
-	if position ~= nil and spell ~= nil then
-		if spell == _Q then
-			self.spells.Q.lastCast = os.clock()
-			self.spells.Q.ready = false
-		elseif spell == _W then
-			self.spells.W.lastCast = os.clock()
-			self.spells.W.ready = false
-		elseif spell == _E then
-			self.spells.E.lastCast = os.clock()
-			self.spells.E.ready = false
-		elseif spell == _R then
-			self.spells.R.lastCast = os.clock()
-			self.spells.R.ready = false
-		end
-		CastSpell(spell)
-	end
-end
-
-function SpellMaster:CanCast(spell)
-	if spell == "Q" then
-		return self.spells.Q.ready
-	elseif spell == "W" then
-		return self.spells.W.ready
-	elseif spell == "E" then
-		return self.spells.E.ready
-	elseif spell == "R" then
-		return self.spells.R.ready
-	end
-end
-
-class("Activator")
-function Activator:__init()
-	self.summoners = {
-		heal = nil,
-		exhaust = nil,
-		ignite = nil,
-		smite = nil
-	}
-
-	self.lastPotion = 0
-	self.potTime = 0
-
-	self.jungleMinions = minionManager(MINION_JUNGLE, 800, myHero, MINION_SORT_MAXHEALTH_DEC)
-
-	_G.ZeroConfig.menu:addSubMenu("Zer0 Activator", "activate")
-
-	_G.ZeroConfig.menu.activate:addSubMenu("Potions", "potions")
-	_G.ZeroConfig.menu.activate.potions:addParam("use", "Use Potions", SCRIPT_PARAM_ONOFF, true)
-	_G.ZeroConfig.menu.activate.potions:addParam("MyHealth", "Use Under HP %", SCRIPT_PARAM_SLICE, 60, 0, 100, 0)
-
-	if myHero:GetSpellData(SUMMONER_1).name:lower():find("summonerheal") then
-		self.summoners.heal = SUMMONER_1
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Heal", "heal")
-		_G.ZeroConfig.menu.activate.heal:addParam("Heal", "Use Heal", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.heal:addParam("MyHealth", "Use My HP Under %", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
-		_G.ZeroConfig.menu.activate.heal:addParam("AllyHealth", "Use Ally HP Under %", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
-		for _, a in ipairs(GetAllyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.heal:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("summonerheal") then
-		self.summoners.heal = SUMMONER_2
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Heal", "heal")
-		_G.ZeroConfig.menu.activate.heal:addParam("Heal", "Use Heal", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.heal:addParam("MyHealth", "Use My HP Under %", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
-		_G.ZeroConfig.menu.activate.heal:addParam("AllyHealth", "Use Ally HP Under %", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
-		for _, a in ipairs(GetAllyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.heal:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	end
-
-	if myHero:GetSpellData(SUMMONER_1).name:lower():find("summonerdot") then
-		self.summoners.ignite = SUMMONER_1
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Ignite", "ignite")
-		_G.ZeroConfig.menu.activate.ignite:addParam("Ignite", "Ignite Mode", SCRIPT_PARAM_LIST, 2, {"Off", "Smart"})
-		for _, a in ipairs(GetEnemyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.ignite:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("summonerdot") then
-		self.summoners.ignite = SUMMONER_2
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Ignite", "ignite")
-		_G.ZeroConfig.menu.activate.ignite:addParam("Ignite", "Ignite Mode", SCRIPT_PARAM_LIST, 2, {"Off", "Smart"})
-		for _, a in ipairs(GetEnemyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.ignite:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	end
-
-	if myHero:GetSpellData(SUMMONER_1).name:lower():find("exhaust") then
-		self.summoners.exhaust = SUMMONER_1
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Exhaust", "exhaust")
-		_G.ZeroConfig.menu.activate.exhaust:addParam("Exhaust", "Exhaust Mode", SCRIPT_PARAM_LIST, 2, {"Off", "Smart"})
-		for _, a in ipairs(GetEnemyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.exhaust:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("exhaust") then
-		self.summoners.exhaust = SUMMONER_2
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Exhaust", "exhaust")
-		_G.ZeroConfig.menu.activate.exhaust:addParam("Exhaust", "Exhaust Mode", SCRIPT_PARAM_LIST, 2, {"Off", "Smart"})
-		for _, a in ipairs(GetEnemyHeroes()) do
-			if a then
-				_G.ZeroConfig.menu.activate.exhaust:addParam(a.charName, "Use On " .. a.charName, SCRIPT_PARAM_ONOFF, true)
-			end
-		end
-	end
-
-	if myHero:GetSpellData(SUMMONER_1).name:lower():find("summonersmiteduel") then
-		self.summoners.smite = SUMMONER_1
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-		_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-		--_G.ZeroConfig.menu.activate:permaShow("Smite")
-		_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-		_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-		
-	elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("summonersmiteduel") then
-		self.summoners.smite = SUMMONER_2
-		_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-		_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-		--_G.ZeroConfig.menu.activate:permaShow("Smite")
-		_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-		_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-	end
-
-	if not self.summoners.smite then
-		if myHero:GetSpellData(SUMMONER_1).name:lower():find("summonersmiteplayerganker") then
-			self.summoners.smite = SUMMONER_1
-			_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-			_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-			--_G.ZeroConfig.menu.activate:permaShow("Smite")
-			_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-			_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-		elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("summonersmiteplayerganker") then
-			self.summoners.smite = SUMMONER_2
-			_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-			_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-			--_G.ZeroConfig.menu.activate:permaShow("smite")
-			_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-			_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-		end
-	end
-
-	if not self.summoners.smite then
-		if myHero:GetSpellData(SUMMONER_1).name:lower():find("summonersmite") then
-			self.summoners.smite = SUMMONER_1
-			_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-			_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-			_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-			_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-		elseif myHero:GetSpellData(SUMMONER_2).name:lower():find("summonersmite") then
-			self.summoners.smite = SUMMONER_2
-			_G.ZeroConfig.menu.activate:addSubMenu("Summoner Smite", "smite")
-			_G.ZeroConfig.menu.activate.smite:addParam("Smite", "Smite", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('U'))
-			_G.ZeroConfig.menu.activate.smite:permaShow("Smite")
-
-			_G.ZeroConfig.menu.activate.smite:addParam("Dragon", "Smite Dragons", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Baron", "Smite Baron", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Blue", "Smite Blue", SCRIPT_PARAM_ONOFF, true)
-			_G.ZeroConfig.menu.activate.smite:addParam("Red", "Smite Red", SCRIPT_PARAM_ONOFF, true)
-		end
-	end
-
-	DelayAction(function() AddTickCallback(function() self:Tick() end) end, 5)
-	DelayAction(function() AddDrawCallback(function() self:SmiteDamageDraw() end) end, 5)
-
-	PrintPretty("Zer0 Activator Loaded...", false, true)
-end
-
-function Activator:SmiteTick()
-	if myHero and not myHero.dead and myHero.health > 0 and _G.ZeroConfig.menu.activate.smite.Smite then
-		for i, jungle in pairs(self.jungleMinions.objects) do
-			if jungle and jungle.health ~= jungle.maxHealth and jungle.health > 0 and not jungle.dead and myHero:GetDistance(jungle) <= 560 and ((jungle.charName == "SRU_Blue" and _G.ZeroConfig.menu.activate.smite.Blue) or (jungle.charName == "SRU_Baron" and _G.ZeroConfig.menu.activate.smite.Baron) or (jungle.charName == "SRU_Red" and _G.ZeroConfig.menu.activate.smite.Red) or (jungle.charName:find("SRU_Dragon") and _G.ZeroConfig.menu.activate.smite.Dragon)) then
-				if jungle.health <= self:SmiteDmg() then
-					CastSpell(self.summoners.smite, jungle)
-				end
-			end
-		end
-	end
-end
-
-function Activator:SmiteDamageDraw()
-	if myHero and not myHero.dead and myHero.health > 0 and self.summoners.smite and myHero:CanUseSpell(self.summoners.smite) and _G.ZeroConfig.menu.activate.smite.Smite then
-		for i, jungle in pairs(self.jungleMinions.objects) do
-			if jungle and jungle.health ~= jungle.maxHealth and jungle.health > 0 and not jungle.dead and ((jungle.charName == "SRU_Blue" and _G.ZeroConfig.menu.activate.smite.Blue) or (jungle.charName == "SRU_Baron" and _G.ZeroConfig.menu.activate.smite.Baron) or (jungle.charName == "SRU_Red" and _G.ZeroConfig.menu.activate.smite.Red) or (jungle.charName:find("Dragon") and _G.ZeroConfig.menu.activate.smite.Dragon)) then
-				local barPos = GetUnitHPBarPos(jungle)
-				barPos.x = math.floor(barPos.x - 32)
-    			barPos.y = math.floor(barPos.y - 3)
-				if jungle.charName:find("Dragon") then
-					barPos.x = barPos.x - 31
-			        barPos.y = barPos.y - 7
-				end
-				if jungle.charName == "SRU_Baron" then
-					barPos.x = barPos.x - 31
-				end
-				if jungle.health <= self:SmiteDmg() then
-					DrawText("Smitable", 25, barPos.x - 40 , barPos.y - 45, ARGB(255,0,252,255))
-				else
-					local dmgLeft = round(((jungle.health - self:SmiteDmg()) / jungle.health) * 100, 0)
-					DrawText("Killable in " .. dmgLeft .. "%", 25, barPos.x - 40 , barPos.y - 45, ARGB(255,0,252,255))
-				end
-			end
-		end
-	end
-end
-
-
-function Activator:SmiteDmg()
-	local SmiteDamage
-	if myHero.level <= 4 then
-		SmiteDamage = 370 + (myHero.level*20)
-	end
-	if myHero.level > 4 and myHero.level <= 9 then
-		SmiteDamage = 330 + (myHero.level*30)
-	end
-	if myHero.level > 9 and myHero.level <= 14 then
-		SmiteDamage = 240 + (myHero.level*40)
-	end
-	if myHero.level > 14 then
-		SmiteDamage = 100 + (myHero.level*50)
-	end
-	return SmiteDamage
-end
-
-function Activator:Tick()
-	--self checks
-	if self.summoners.heal and _G.ZeroConfig.menu.activate.heal.Heal and ((myHero.health + myHero.shield) * 100 / myHero.maxHealth) <= _G.ZeroConfig.menu.activate.heal.MyHealth and myHero:CanUseSpell(self.summoners.heal) then
-		CastSpell(self.summoners.heal, myHero)
-	end
-
-	--smite checks
-	if self.summoners.smite and myHero:CanUseSpell(self.summoners.smite) then
-		self.jungleMinions:update()
-		self:SmiteTick()
-	end
-
-	for i,v in ipairs(GetAllyHeroes()) do
-		if v and ValidTarget(v) and not v.dead and v.health > 0 then
-			if self.summoners.heal and _G.ZeroConfig.menu.activate.heal.Heal and _G.ZeroConfig.menu.activate.heal[v.charName] and ((v.health + v.shield) * 100 / v.maxHealth) <= _G.ZeroConfig.menu.activate.heal.AllyHealth then
-				CastSpell(self.summoners.heal, v)
-			end
-		end
-	end
-
-	for i,v in ipairs(GetEnemyHeroes()) do
-		if v and ValidTarget(v) and not v.dead and v.health > 0 then
-			--Ignite Checks
-			if self.summoners.ignite and ((v.health + v.shield) * 100 / v.maxHealth) <= 40 + (20 * myHero.level) and v:GetDistance(myHero) <= 600 then
-				CastSpell(self.summoners.ignite, v)
-			end
-		end
-	end
-end
-
-class("ZAware")
-function ZAware:__init()
-	self.ready = false
-	_G.ZeroConfig.menu:addSubMenu("Awareness", "aware")
-		_G.ZeroConfig.menu.aware:addParam("tower", "Draw Tower Range", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.aware:addParam("gank", "Draw Gank Alerts", SCRIPT_PARAM_ONOFF, true)
-		_G.ZeroConfig.menu.aware:addParam("path", "Draw Enemy Paths", SCRIPT_PARAM_ONOFF, true)
-	self.wardTracker = WardTracker()
-	PrintPretty("Zer0 Awareness Loaded...", false, true)
-	DelayAction(function() AddDrawCallback(function() self:OnDraw() end) end, 5)
-	self.ready = true
-end
-
-function ZAware:OnDraw()
-	if not self.ready then return end
-	self.wardTracker:Draw()
-	if _G.ZeroConfig.menu.aware.gank or _G.ZeroConfig.menu.aware.path then
-		local gankAlert = nil
-		for _, enemy in ipairs(GetEnemyHeroes()) do
-			if enemy and not enemy.dead and enemy.health > 0 and myHero.hasMovePath and enemy.isMoving then
-				stepNum = 1
-				iPaths = enemy.pathCount
-				myLastStep = nil
-				for i=enemy.pathIndex, iPaths do
-					path = enemy:GetPath(i)
-					if GetDistance(path, myHero.pos) < 1000 and not enemy.visible then
-						gankAlert = enemy
-					end
-					if _G.ZeroConfig.menu.aware.path then
-						sPos = WorldToScreen(D3DXVECTOR3(path.x, path.y, path.z))
-						if OnScreen({ x = sPos.x, y = sPos.y }, { x = sPos.x, y = sPos.y }) then
-							DrawCircle(path.x, path.y, path.z, 100, ARGB(255, 255, 255, 255))
-							DrawText(enemy.charName .. "["..stepNum.."]", 15, sPos.x - 20, sPos.y, ARGB(150,255,255,255))
-							if myLastStep ~= nil then
-								 DrawLine3D(path.x,path.y,path.z, myLastStep.x,myLastStep.y,myLastStep.z,2, RGB(66,208,255))
-							else
-								DrawLine3D(path.x,path.y,path.z, enemy.x,enemy.y,enemy.z,2, RGB(66,208,255))
-							end
-							myLastStep = path
-							stepNum = stepNum + 1
-						end
-					end
-				end
-			end
-		end
-
-		if _G.ZeroConfig.menu.aware.gank then
-			if gankAlert ~= nil then
-				DrawText("Approaching Champion: " .. gankAlert.charName .. "[D:" .. GetDistance(gankAlert, myHero) .. "]", 25, 60, 60, ARGB(150,255,255,255))
-			end
-		end
-	end
-
-	if _G.ZeroConfig.menu.aware.tower then
-		for _,tower in pairs(GetTurrets()) do
-			if tower.object and tower.object.team ~= myHero.team and GetDistance(tower.object) < 1700 then
-				DrawCircle3D(tower.object.x, tower.object.y, tower.object.z, 875, 4, ARGB(80, 32,178,100), 52)
-			end
-		end
-	end
-end
-
-class("WardTracker")
-function WardTracker:__init()
-	self.eWardPositions = {}
-	_G.ZeroConfig.menu.aware:addParam("trackwards", "Track Wards", SCRIPT_PARAM_ONOFF, true)
-end
-
-function WardTracker:OnCreateObj(obj)
-	if obj and obj.team ~= myHero.team and obj.name == "TrinketTotemLvl1" or obj.name == "VisionWard" or obj.name == "TrinketOrbLvl3" or obj.name == "ItemGhostWard" or obj.name == "SightWard" then
-		wardTimer = GetGameTimer() + 180
-		self.eWardPositions[wardTimer] = obj
-	end
-end
-
-function WardTracker:OnDeleteObj(obj)
-	if obj and obj.team ~= myHero.team and obj.name == "TrinketTotemLvl1" or obj.name == "VisionWard" or obj.name == "TrinketOrbLvl3" or obj.name == "ItemGhostWard" or obj.name == "SightWard" then
-		for time, ward in pairs(self.eWardPositions) do
-			if obj == ward then
-				self.eWardPositions[time] = nil
-			end
-		end
-	end
-end
-
-function WardTracker:Draw()
-	if wardPos ~= nil then
-		for time, spots in pairs(wardPos) do
-			--@TODO
-			if time < os.clock() then
-				DrawCircle3D(spots.x, spots.y, spots.z, 90, 4, ARGB(80, 32,178,100), 52)
-			else
-				wardPos[time] = nil
-			end
-		end
-	end
-end
-
-class("AutoLeveler")
-function AutoLeveler:__init(order)
-	self.humanMin = 1
-	self.humanMax = 3
-
-	if order then
-		self.order = order
-		self.cLevel = myHero.level
-		AddTickCallback(function() self:OnTick() end)
-	end
-end
-
-function AutoLeveler:OnTick()
-	if not self.order or not self.cLevel then return end
-	if myHero.level > self.cLevel then
-		if self.humanMax == 0 then
-			LevelSpell(self.order)
-		else
-			DelayAction(function() LevelSpell(self.order) end, math.random(self.humanMin, self.humanMax))
-		end
-	end
-end
-
-class("Misc")
-function Misc:__init()
-	PrintPretty("Zer0 Misc Tools Loaded...", false, true)
-	_G.ZeroConfig.menu:addSubMenu("Misc", "misc")
-		_G.ZeroConfig.menu.misc:addParam("masterySpam", "Show Mastery On Kill", SCRIPT_PARAM_ONOFF, true)
-
-	self.myInfo = {
-		kills = 0,
-		assists = 0
-	}
-end
-
-function Misc:OnAnimation(hero, anim)
-	if hero.team ~= myHero.team and hero.type == myHero.type and animation == "Death" and _G.ZeroConfig.menu.misc.masterySpam then
-		if self.myInfo.kills ~= myHero.kills or self.myInfo.assists ~= myHero.assists then
-			DelayAction(function() SendChat("/masterybadge") end, math.random(100, 300)/1000)
-			self.myInfo.kills = myHero.kills
-			self.myInfo.assists = myHero.assists
-		end
-	elseif hero.team ~= myHero.team and hero.type == myHero.type and animation == "Death" and not _G.ZeroConfig.menu.misc.masterySpam then
-		self.myInfo.kills = myHero.kills
-		self.myInfo.assists = myHero.assists
-	end
-end
-
---Utility
-
-function GetItemSlot(itemName)
-	local slot = nil
-	if itemName ~= nil then
-		for i=0, 12 do
-			if string.lower(myHero:GetSpellData(i).name) == string.lower(name) then
-				slot = i
-				break
-			end
-		end
-	end
-	if (slot ~= nil) then
-		return slot
-	end
-	return nil
-end
-
-function GetEnemySpellList()
-	for i = 1, heroManager.iCount,1 do
-		local hero = heroManager:getHero(i)
-		if hero.team ~= player.team then
-			if Champions[hero.charName] ~= nil then
-
-			end
-		end
-	end
-end
-
-function CountEnemyInRange(range, from)
-	if not range or not from then return 0 end
-	local inRange = 0
-	for _, e in ipairs(GetEnemyHeroes()) do
-		if e and e.health > 0 and not e.dead and from:GetDistance(e) <= range then
-			inRange = inRange + 1
-		end
-	end
-	return inRange
-end
-
-function CountAllyInRange(range, from)
-	if not range or not from then return 0 end
-	local inRange = 0
-	for _, e in ipairs(GetAllyHeroes()) do
-		if e and e.health > 0 and not e.dead and from:GetDistance(e) <= range then
-			inRange = inRange + 1
-		end
-	end
-	return inRange
+function GetHPBarPos(enemy)
+  enemy.barData = {PercentageOffset = {x = -0.05, y = 0}}
+  local barPos = GetUnitHPBarPos(enemy)
+  local barPosOffset = GetUnitHPBarOffset(enemy)
+  local barOffset = { x = enemy.barData.PercentageOffset.x, y = enemy.barData.PercentageOffset.y }
+  local barPosPercentageOffset = { x = enemy.barData.PercentageOffset.x, y = enemy.barData.PercentageOffset.y }
+  local BarPosOffsetX = -50
+  local BarPosOffsetY = 46
+  local CorrectionY = 39
+  local StartHpPos = 31 
+  barPos.x = math.floor(barPos.x + (barPosOffset.x - 0.5 + barPosPercentageOffset.x) * BarPosOffsetX + StartHpPos)
+  barPos.y = math.floor(barPos.y + (barPosOffset.y - 0.5 + barPosPercentageOffset.y) * BarPosOffsetY + CorrectionY)
+  local StartPos = Vector(barPos.x , barPos.y, 0)
+  local EndPos = Vector(barPos.x + 108 , barPos.y , 0)    
+  return Vector(StartPos.x, StartPos.y, 0), Vector(EndPos.x, EndPos.y, 0)
 end
 
 function GetFarmPosition(range, width, minions)
@@ -3339,239 +542,3046 @@ end
 function CountObjectsNearPos(pos, range, radius, objects)
     local n = 0
     for i, object in pairs(objects) do
-      if GetDistance(pos, object) <= radius then
+      if GetDistanceSqr(pos, object) <= radius * radius then
         n = n + 1
       end
     end
     return n
 end
 
-function UnitIsFleeingFrom(unit, source)
-	if not unit or unit.dead or unit.health < 0 then
-		return false
-	end
+function HasBuff(unit, buffname)
 
-	if not source or source.dead or source.health <= 0 then
-		return false
-	end
+    for i = 1, unit.buffCount do
+        local tBuff = unit:getBuff(i)
+        if tBuff.valid and BuffIsValid(tBuff) and tBuff.name == buffname then
+            return true
+        end
+    end
+    return false
 
-	if unit.path.count > 1 then
-		currPath = unit.path:Path(1)
-		if currPath then
-			if GetDistance(source, currPath) > GetDistance(source, unit) then
-				return true
-			end
-		end
+end
+
+function CalcVector(source,target)
+	local V = Vector(source.x, source.y, source.z)
+	local V2 = Vector(target.x, target.y, target.z)
+	local vec = V-V2
+	local vec2 = vec:normalized()
+	return vec2
+end
+
+function DrawLine3D2(x1, y1, z1, x2, y2, z2, width, color)
+    local p = WorldToScreen(D3DXVECTOR3(x1, y1, z1))
+    local px, py = p.x, p.y
+    local c = WorldToScreen(D3DXVECTOR3(x2, y2, z2))
+    local cx, cy = c.x, c.y
+    DrawLine(cx, cy, px, py, width or 1, color or 4294967295)
+end
+--[[-----------------------------------------------------
+--------------------------/MATH--------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+------------------------DRAWINGS-------------------------
+-----------------------------------------------------]]--
+function DrawMyArrow(from, to, color)
+	DrawLineBorder3D(from.x, myHero.y, from.z, to.x, myHero.y, to.z, 2, color, 1)
+end
+
+function DrawCircleNextLvl(x, y, z, radius, width, color, chordlength)
+	radius = radius or 300
+	quality = math.max(8, round(180 / math.deg((math.asin((chordlength / (2 * radius)))))))
+	quality = 2 * math.pi / quality
+	radius = radius * .92
+    local points = {}
+    for theta = 0, 2 * math.pi + quality, quality do
+		local c = WorldToScreen(D3DXVECTOR3(x + radius * math.cos(theta), y, z - radius * math.sin(theta)))
+		points[#points + 1] = D3DXVECTOR2(c.x, c.y)
+    end
+	DrawLines2(points, width or 1, color or 4294967295)
+end
+
+function DrawCircle2(x, y, z, radius, color)
+	local vPos1 = Vector(x, y, z)
+	local vPos2 = Vector(cameraPos.x, cameraPos.y, cameraPos.z)
+	local tPos = vPos1 - (vPos1 - vPos2):normalized() * radius
+	local sPos = WorldToScreen(D3DXVECTOR3(tPos.x, tPos.y, tPos.z))
+	if OnScreen({x = sPos.x,y = sPos.y}, {x = sPos.x,y = sPos.y}) then
+    	DrawCircleNextLvl(x, y, z, radius, 1, color, 75)
 	end
 end
 
-function UnitIsFleeingMe(unit)
-	if not unit or unit.dead or unit.health < 0 then
-		return false
-	end
+function RGBColor(menu)
+	return ARGB(menu[1], menu[2], menu[3], menu[4])
+end
+--[[-----------------------------------------------------
+------------------------/DRAWINGS------------------------
+-----------------------------------------------------]]--
 
-	if not meHero or meHero.dead or meHero.health <= 0 then
-		return false
-	end
-
-	if unit.path.count > 1 then
-		currPath = unit.path:Path(1)
-		if currPath then
-			if GetDistance(meHero, currPath) > GetDistance(meHero, unit) then
-				return true
-			end
-		end
-	end
+--[[-----------------------------------------------------
+---------------------PRINT MANAGER-----------------------
+-----------------------------------------------------]]--
+class("PrintManager")
+function PrintManager:__init(scriptName)
+	self.name = scriptName
+	self.antiSpam = nil
 end
 
-function CanWeSeeThis(point)
-	local i = WorldToScreen(D3DXVECTOR3(spot.x, spot.y, spot.z))
-	if (x > 0 and x < WINDOW_W) and (y > 0 and y < WINDOW_H) then
-		return true
-	end
-	return false
+function PrintManager:General(msg)
+	if self.antiSpam == msg then return end
+	self.antiSpam = msg
+	print("<font color=\"#FF794C\"><b>" .. self.name .. "</b></font> <font color=\"#FFDFBF\"><b>" .. msg .. "</b></font>")
 end
 
-function CalcMR(unit, target) --Credit: Roach
-	if BaseMR[target.charName] then
-		local bonusMagicPenPercent = unit:getItem(3135) and 0.65 or 1
-		local baseMR = BaseMR[target.charName].Base + (BaseMR[target.charName].PerLevel * (target.level - 1))
-		local bonusMR = target.magicArmor - baseMR
-		
-		return 100 / (100 + (((bonusMR * bonusMagicPenPercent) + baseMR) * unit.magicPenPercent) - unit.magicPen)
+function PrintManager:Evade(msg)
+	if self.antiSpam == msg then return end
+	self.antiSpam = msg
+	print("<font color=\"#FF794C\"><b>" .. self.name .. " - Evade</b></font> <font color=\"#FFDFBF\"><b>" .. msg .. "</b></font>")
+end
+
+_G.azBundle.PrintManager = PrintManager(_G.azBundle.ChampionData.scriptName)
+--[[-----------------------------------------------------
+----------------------/PRINT MANAGER---------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+----------------------MENU MANAGER-----------------------
+-----------------------------------------------------]]--
+class("MenuManager")
+function MenuManager:__init(scriptName)
+	self.menu = scriptConfig("0" .. myHero.charName, " >> " .. scriptName .. " << ")
+end
+--[[-----------------------------------------------------
+-----------------------/MENU MANAGER---------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+--------------------TARGET SELECTOR----------------------
+-----------------------------------------------------]]--
+class("MyTarget")
+function MyTarget:__init(champRange, minionRange, jungleRange, dmgType)
+	self.range = {
+		Champion = champRange,
+		Minion = minionRange,
+		Jungle = jungleRange
+	}
+	
+	self.jungle = minionManager(MINION_JUNGLE, self.range.Jungle, myHero, MINION_SORT_MAXHEALTH_DEC)
+	self.minion = minionManager(MINION_ENEMY, self.range.Minion, myHero, MINION_SORT_MAXHEALTH_DEC)
+	self.champion = TargetSelector(TARGET_LESS_CAST_PRIORITY, self.range.Champion, dmgType, true)
+end
+--[[-----------------------------------------------------
+---------------------/TARGET SELECTOR--------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+---------------------EVADE MANAGER-----------------------
+-----------------------------------------------------]]--
+class("EvadeManager")
+function EvadeManager:__init()
+	self.dashSpells = {}
+	
+	self.evadeSkillShotQue = {}
+	self.evadeSkillShotObjectQue = {}
+	self.evadeCount = 1
+	self.evadeDistanceMultiplicator = 1.25
+	self.humanizerMultiplicator = 1
+	self.dangerDamage = 0.6
+	self.deltaTime = 0
+	self.hasShownEvadeMessage = false
+	
+	self.isUsing = false
+	
+	self.ChampData = {
+		["Aatrox"] = {
+			Name = "Aatrox",
+			SkillData = {
+				["AatroxQ"] = {spellname = "AatroxE", spellSlot = "E", radius = 100, maxDistance = 1075, delay = 250, speed = 1200, shotType = "Line", projName = "AatroxBladeofTorment_mis.troy", canWall = true, canDash = true},
+				["AatroxE"] = {spellname = "AatroxQ", spellSlot = "Q", radius = 145, maxDistance = 650, delay = 250, speed = 450, shotType = "Line", projName = "AatroxQ.troy", canWall = true, canDash = true}
+			}
+		},
+		["Ahri"] = {
+			Name = "Ahri",
+			SkillData = {
+				["AhriOrbofDeception"] = {spellname = "AhriOrbofDeception", spellSlot = "Q", radius = 100, maxDistance = 800, delay = 250, speed = 1750, shotType = "Line", projName = "Ahri_Orb_mis.troy", canWall = true, canDash = true},
+				["AhriSeduce"] = {spellname = "Charm", spellSlot = "E", radius = 60, maxDistance = 1075, delay = 250, speed = 1600, shotType = "Line", projName = "AatroxQ.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Amumu"] = {
+			Name = "Amumu",
+			SkillData = {
+				["BandageToss"] = {spellname = "BandageToss", spellSlot = "Q", radius = 80, maxDistance = 1100, delay = 250, speed = 2000, shotType = "Line", projName = "Bandage_beam.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Anivia"] = {
+			Name = "Anivia",
+			SkillData = {
+				["FlashFrostSpell"] = {spellname = "FlashFrostSpell", spellSlot = "Q", radius = 110, maxDistance = 1100, delay = 250, speed = 850, shotType = "Line", projName = "cryo_FlashFrost_mis.troy", canWall = true, canDash = true},
+				["Frostbite"] = {spellname = "Frostbite", spellSlot = "E", radius = 150, maxDistance = 700, delay = 250, speed = 1500, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Akali"] = {
+			Name = "Akali",
+			SkillData = {
+				["AkaliQ"] = {spellname = "AkaliQ", spellSlot = "Q", radius = 0, maxDistance = 600, delay = 0, speed = 1000, shotType = "Line", canWall = true, canDash = false}
+			}
+		},
+		["Ashe"] = {
+			Name = "Ashe",
+			SkillData = {
+				["EnchantedCrystalArrow"] = {spellname = "EnchantedCrystalArrow", spellSlot = "Q", radius = 130, maxDistance = 25000, delay = 250, speed = 1600, projName = "EnchantedCrystalArrow_mis.troy", shotType = "Line", single = true, canWall = true, canDash = false},
+				["Volley"] = {spellname = "Volley", spellSlot = "W", radius = 200, maxDistance = 1200, delay = 250, speed = 1850, projName = "EnchantedCrystalArrow_mis.troy", shotType = "Cone", single = true, canWall = true, canDash = false}
+			}
+		},
+		["Annie"] = {
+			Name = "Annie",
+			SkillData = {
+				["Disintegrate"] = {spellname = "Disintegrate", spellSlot = "Q", radius = 0, maxDistance = 625, delay = 0, speed = 0, shotType = "Line", canWall = true, canDash = true},
+				["Incinerate"] = {spellname = "Incinerate", spellSlot = "W", radius = 200, maxDistance = 625, delay = 250, speed = 0, shotType = "Line", canWall = true, canDash = true},
+				["InfernalGuardian"] = {spellname = "InfernalGuardian", spellSlot = "R", radius = 290, maxDistance = 625, delay = 0, speed = 0, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Blitzcrank"] = {
+			Name = "Blitzcrank",
+			SkillData = {
+				["RocketGrab"] = {spellname = "RocketGrabMissile", spellSlot = "Q", radius = 70, maxDistance = 1050, delay = 250, speed = 1800, shotType = "Line", projName = "FistGrab_mis.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Brand"] = {
+			Name = "Brand",
+			SkillData = {
+				["BrandBlaze"] = {spellname = "BrandBlaze", spellSlot = "Q", radius = 80, maxDistance = 900, delay = 250, speed = 1600, shotType = "Line", projName = "BrandBlaze_mis.troy", canWall = true, canDash = true},
+				["BrandWildfire"] = {spellname = "BrandWildfire", spellSlot = "R", radius = 150, maxDistance = 1100, delay = 250, speed = 1000, shotType = "Line", projName = "BrandWildfire_mis.troy", canWall = true, canDash = false}
+			}
+		},
+		["Caitlyn"] = {
+			Name = "Caitlyn",
+			SkillData = {
+				["CaitlynPiltoverPeacemaker"] = {spellname = "CaitlynPiltoverPeacemaker", spellSlot = "Q", radius = 90, maxDistance = 1300, delay = 625, speed = 2200, shotType = "Line", projName = "caitlyn_Q_mis.troy", canWall = true, canDash = true},
+				["CaitlynHeadshotMissile"] = {spellname = "CaitlynHeadshotMissile", spellSlot = "R", radius = 100, maxDistance = 3000, delay = 250, speed = 1000, shotType = "Line", single = true, projName = "caitlyn_ult_mis.troy", canWall = true, canDash = false}
+			}
+		},
+		["Chogath"] = {
+			Name = "Chogath",
+			SkillData = {
+				["Rupture"] = {spellname = "Rupture", spellSlot = "Q", radius = 125, maxDistance = 950, delay = 875, speed = 2200, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Corki"] = {
+			Name = "Corki",
+			SkillData = {
+				["PhosphorusBomb"] = {spellname = "PhosphorusBomb", spellSlot = "Q", radius = 250, maxDistance = 825, delay = 750, speed = 2000, shotType = "Circle", canWall = true, canDash = true},
+				["GGun"] = {spellname = "GGun", spellSlot = "E", radius = 200, maxDistance = 600, delay = 750, speed = 2000, shotType = "Cone", canWall = true, canDash = true},
+				["MissileBarrage"] = {spellname = "MissileBarrage", spellSlot = "R", radius = 40, maxDistance = 1300, delay = 250, speed = 2000, shotType = "Line", single = true, canWall = true, canDash = true},
+				["MissileBarrageBig"] = {spellname = "MissileBarrageBig", spellSlot = "R", radius = 60, maxDistance = 1600, delay = 250, speed = 2000, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Cassiopeia"] = {
+			Name = "Cassiopeia",
+			SkillData = {
+				["CassiopeiaNoxiousBlast"] = {spellname = "CassiopeiaNoxiousBlast", spellSlot = "Q", radius = 250, maxDistance = 850, delay = 250, speed = 500, shotType = "Circle", canWall = true, canDash = true}
+			}
+		},
+		["Darius"] = {
+			Name = "Darius",
+			SkillData = {
+				["DariusAxeGrabCone"] = {spellname = "DariusAxeGrabCone", spellSlot = "E", radius = 200, maxDistance = 570, delay = 320, speed = 2000, shotType = "Cone", canWall = true, canDash = true}
+			}
+		},
+		["Diana"] = {
+			Name = "Diana",
+			SkillData = {
+				["DianaArc"] = {spellname = "DianaArc", spellSlot = "Q", radius = 200, maxDistance = 830, delay = 250, speed = 2000, shotType = "Circle", canWall = true, canDash = true}
+			}
+		},
+		["Draven"] = {
+			Name = "Draven",
+			SkillData = {
+				["DravenDoubleShot"] = {spellname = "DravenDoubleShot", spellSlot = "E", radius = 130, maxDistance = 1100, delay = 250, speed = 1400, shotType = "Line", projName = "Draven_E_mis.troy", canWall = true, canDash = true},
+				["DravenRCast"] = {spellname = "DravenDoubleShot", spellSlot = "R", radius = 160, maxDistance = 25000, delay = 500, speed = 1400, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Elise"] = {
+			Name = "Elise",
+			SkillData = {
+				["EliseHumanE"] = {spellname = "EliseHumanE", spellSlot = "E", radius = 70, maxDistance = 1100, delay = 250, speed = 1450, shotType = "Line", projName = "Elise_human_E_mis.troy", canWall = true, canDash = true},
+				["EliseHumanQ"] = {spellname = "EliseHumanQ", spellSlot = "Q", radius = 80, maxDistance = 625, delay = 250, speed = 1600, shotType = "Line", canWall = true, canDash = true},
+				["EliseHumanW"] = {spellname = "EliseHumanW", spellSlot = "W", radius = 100, maxDistance = 950, delay = 250, speed = 1450, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Ezreal"] = {
+			Name = "Ezreal",
+			SkillData = {
+				["EzrealMysticShot"] = {spellname = "EzrealMysticShot", spellSlot = "Q", radius = 80, maxDistance = 1100, delay = 250, speed = 2000, shotType = "Line", projName = "Ezreal_mysticshot_mis.troy", canWall = true, canDash = true},
+				["EzrealEssenceFlux"] = {spellname = "EzrealEssenceFlux", spellSlot = "W", radius = 80, maxDistance = 900, delay = 250, speed = 1500, shotType = "Line", projName = "Ezreal_essenceflux_mis.troy", canWall = true, canDash = true},
+				["EzrealTrueshotBarrage"] = {spellname = "EzrealTrueshotBarrage", spellSlot = "R", radius = 160, maxDistance = 20000, delay = 1000, speed = 2000, projName = "Ezreal_TrueShot_mis.troy", shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Heimerdinger"] = {
+			Name = "Heimerdinger",
+			SkillData = {
+				["HextechMicroRockets"] = {spellname = "HextechMicroRockets", spellSlot = "W", radius = 80, maxDistance = 1100, delay = 250, speed = 1200, shotType = "Line", single = true, canWall = true, canDash = true},
+				["CH-2ElectronStormGrenade"] = {spellname = "CH-2ElectronStormGrenade", spellSlot = "E", radius = 80, maxDistance = 925, delay = 250, speed = 1750, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["FiddleSticks"] = {
+			Name = "FiddleSticks",
+			SkillData = {
+				["DarkWind"] = {spellname = "DarkWind", spellSlot = "E", radius = 0, maxDistance = 750, delay = 0, speed = 1500, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Fizz"] = {
+			Name = "Fizz",
+			SkillData = {
+				["FizzMarinerDoom"] = {spellname = "FizzMarinerDoom", spellSlot = "R", radius = 80, maxDistance = 1275, delay = 0, speed = 1350, shotType = "Line", projName = "Fizz_UltimateMissile.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Galio"] = {
+			Name = "Galio",
+			SkillData = {
+				["GalioResoluteSmite"] = {spellname = "GalioResoluteSmite", spellSlot = "Q", radius = 200, maxDistance = 2000, delay = 250, speed = 850, shotType = "Line", projName = "galio_concussiveBlast_mis.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Gragas"] = {
+			Name = "Gragas",
+			SkillData = {
+				["GragasBarrelRoll"] = {spellname = "GragasBarrelRoll", spellSlot = "Q", radius = 100, maxDistance = 950, delay = 250, speed = 1000, shotType = "Line", projName = "gragas_barrelroll_mis.troy", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Graves"] = {
+			Name = "Graves",
+			SkillData = {
+				["GravesClusterShot"] = {spellname = "GravesClusterShot", spellSlot = "Q", radius = 60, maxDistance = 900, delay = 250, speed = 1750, shotType = "Line", projName = "Graves_ClusterShot_mis.troy", canWall = true, canDash = true},
+				["GravesChargeShot"] = {spellname = "GravesChargeShot", spellSlot = "R", radius = 100, maxDistance = 1000, delay = 250, speed = 1500, shotType = "Line", projName = "Graves_ChargedShot_mis.troy", canWall = true, canDash = true}
+			}
+		},
+		["Irelia"] = {
+			Name = "Irelia",
+			SkillData = {
+				["IreliaTranscendentBlades"] = {spellname = "IreliaTranscendentBlades", spellSlot = "R", radius = 120, maxDistance = 1200, delay = 250, speed = 1600, shotType = "Line", projName = "Irelia_ult_dagger_mis.troy", canWall = true, canDash = true}
+			}
+		},
+		["Janna"] = {
+			Name = "Janna",
+			SkillData = {
+				["HowlingGale"] = {spellname = "HowlingGale", spellSlot = "Q", radius = 150, maxDistance = 1100, delay = 250, speed = 1600, shotType = "Line", projName = "HowlingGale_mis.troy", canWall = true, canDash = true}
+			}
+		},
+		["Jayce"] = {
+			Name = "Jayce",
+			SkillData = {
+				["JayceToTheSkies"] = {spellname = "JayceToTheSkies", spellSlot = "Q", radius = 150, maxDistance = 600, delay = 250, speed = 2500, shotType = "Line", canWall = true, canDash = true},
+				["JayceShockBlast"] = {spellname = "JayceShockBlast", spellSlot = "Q", radius = 70, maxDistance = 1050, delay = 250, speed = 1450, shotType = "Line", projName = "JayceOrbLightning.troy", canWall = true, canDash = true},
+			}
+		},
+		["Jinx"] = {
+			Name = "Jinx",
+			SkillData = {
+				["JinxWMissile"] = {spellname = "JinxWMissile", spellSlot = "W", radius = 70, maxDistance = 1450, speed = 3300, delay = 600, shotType = "Line", single = true, canWall = true, canDash = true},
+				["JinxRWrapper"] = {spellname = "JinxRWrapper", spellSlot = "R", radius = 120, maxDistance = 20000, speed = 2200, delay = 600, single = true, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Karthus"] = {
+			Name = "Karthus",
+			SkillData = {
+				["LayWaste"] = {spellname = "LayWaste", spellSlot = "Q", radius = 140, maxDistance = 875, speed = 1000, delay = 750, projName = "LayWaste_point.troy", shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Karma"] = {
+			Name = "Karma",
+			SkillData = {
+				["KarmaQ"] = {spellname = "KarmaQ", spellSlot = "Q", radius = 90, maxDistance = 950, speed = 1700, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Kassadin"] = {
+			Name = "Kassadin",
+			SkillData = {
+				["NullSphere"] = {spellname = "NullSphere", spellSlot = "Q", radius = 0, maxDistance = 650, speed = 0, delay = 250, shotType = "Line", canWall = true, canDash = false},
+				["ForcePulse"] = {spellname = "ForcePulse", spellSlot = "E", radius = 200, maxDistance = 700, speed = 0, delay = 250, shotType = "Cone", canWall = false, canDash = false}
+			}
+		},
+		["Katarina"] = {
+			Name = "Katarina",
+			SkillData = {
+				["KatarinaR"] = {spellname = "KatarinaR", spellSlot = "R", radius = 0, maxDistance = 550, speed = 0, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["KatarinaQ"] = {spellname = "KatarinaQ", spellSlot = "Q", radius = 0, maxDistance = 675, speed = 0, delay = 250, shotType = "Line", canWall = true, canDash = false}
+			}
+		},
+		["Kennen"] = {
+			Name = "Kennen",
+			SkillData = {
+				["KennenShurikenHurlMissile1"] = {spellname = "KennenShurikenHurlMissile1", spellSlot = "Q", radius = 50, maxDistance = 1050, speed = 1700, delay = 180, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Khazix"] = {
+			Name = "Khazix",
+			SkillData = {
+				["KhazixQ"] = {spellname = "KhazixQ", spellSlot = "Q", radius = 0, maxDistance = 375, speed = 0, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["KhazixW"] = {spellname = "KhazixW", spellSlot = "W", radius = 0, maxDistance = 375, speed = 1700, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["KogMaw"] = {
+			Name = "KogMaw",
+			SkillData = {
+				["CausticSpittle"] = {spellname = "CausticSpittle", spellSlot = "Q", radius = 45, maxDistance = 625, speed = 0, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["KogMawVoidOozeMissile"] = {spellname = "KogMawVoidOozeMissile", spellSlot = "E", radius = 100, maxDistance = 1200, speed = 1450, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["KogMawLivingArtillery"] = {spellname = "KogMawVoidOozeMissile", spellSlot = "R", radius = 100, maxDistance = 2200, speed = 0, delay = 850, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["LeeSin"] = {
+			Name = "LeeSin",
+			SkillData = {
+				["BlindMonkQOne"] = {spellname = "BlindMonkQOne", spellSlot = "Q", radius = 70, maxDistance = 975, speed = 1800, delay = 250, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Leona"] = {
+			Name = "Leona",
+			SkillData = {
+				["LeonaZenithBlade"] = {spellname = "LeonaZenithBlade", spellSlot = "E", radius = 80, maxDistance = 900, speed = 2000, delay = 250, shotType = "Line", canWall = false, canDash = true},
+				["LeonaSolarFlare"] = {spellname = "LeonaSolarFlare", spellSlot = "R", radius = 300, maxDistance = 1200, speed = 2000, delay = 250, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Lissandra"] = {
+			Name = "Lissandra",
+			SkillData = {
+				["LissandraQ"] = {spellname = "LissandraQ", spellSlot = "Q", radius = 75, maxDistance = 725, speed = 1400, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["LissandraE"] = {spellname = "LissandraE", spellSlot = "E", radius = 140, maxDistance = 1500, speed = 850, delay = 250, shotType = "Line", canWall = false, canDash = false}
+			}
+		},
+		["Lissandra"] = {
+			Name = "Lissandra",
+			SkillData = {
+				["LissandraQ"] = {spellname = "LissandraQ", spellSlot = "Q", radius = 75, maxDistance = 725, speed = 1400, delay = 250, shotType = "Line", aoE = true, canWall = true, canDash = true},
+				["LissandraE"] = {spellname = "LissandraE", spellSlot = "E", radius = 140, maxDistance = 1500, speed = 850, delay = 250, shotType = "Line", aoE = true, canWall = false, canDash = false}
+			}
+		},
+		["Lucian"] = {
+			Name = "Lucian",
+			SkillData = {
+				["LucianQ"] = {spellname = "LucianQ", spellSlot = "Q", radius = 65, maxDistance = 570, speed = 0, delay = 350, shotType = "Line", canWall = true, canDash = false},
+				["LucianW"] = {spellname = "LucianW", spellSlot = "W", radius = 80, maxDistance = 1000, speed = 1600, delay = 300, shotType = "Line", canWall = false, canDash = true}
+			}
+		},
+		["Lux"] = {
+			Name = "Lux",
+			SkillData = {
+				["LuxLightBinding"] = {spellname = "LuxLightBinding", spellSlot = "Q", radius = 80, maxDistance = 1175, delay = 250, speed = 1200, shotType = "Line", targets = 2, canWall = true, canDash = true},
+				["LuxLightStrikeKugel"] = {spellname = "LuxLightStrikeKugel", spellSlot = "E", radius = 275, maxDistance = 1175, delay = 250, speed = 1400, shotType = "Circle", aoE = true, canWall = true, canDash = true},
+				["LuxMaliceCannon"] = {spellname = "LuxMaliceCannon", spellSlot = "R", radius = 200, maxDistance = 3500, shotType = "Line", aoE = true, canWall = false, canDash = true}
+			}
+		},
+		["Maokai"] = {
+			Name = "Maokai",
+			SkillData = {
+				["MaokaiTrunkLine"] = {spellname = "MaokaiTrunkLine", spellSlot = "Q", radius = 110, maxDistance = 600, speed = 1200, delay = 350, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Morgana"] = {
+			Name = "Morgana",
+			SkillData = {
+				["DarkBindingMissile"] = {spellname = "DarkBindingMissile", spellSlot = "Q", radius = 80, maxDistance = 1300, speed = 1200, delay = 250, projName = "DarkBinding_mis.troy", shotType = "Line", single = true, canWall = true, canDash = true},
+				["TormentedSoil"] = {spellname = "TormentedSoil", spellSlot = "W", radius = 175, maxDistance = 975, speed = 0, delay = 250, shotType = "Circle", aoE = true, canWall = false, canDash = true}
+			}
+		},
+		["DrMundo"] = {
+			Name = "DrMundo",
+			SkillData = {
+				["InfectedCleaverMissile"] = {spellname = "InfectedCleaverMissile", spellSlot = "Q", radius = 75, maxDistance = 1000, speed = 2000, delay = 250, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Nami"] = {
+			Name = "Nami",
+			SkillData = {
+				["NamiQ"] = {spellname = "NamiQ", spellSlot = "Q", radius = 100, maxDistance = 875, speed = 0, delay = 850, shotType = "Circle", projName = "Nami_Q_mis.troy", canWall = true, canDash = true}
+			}
+		},
+		["Nasus"] = {
+			Name = "Nasus",
+			SkillData = {
+				["NasusE"] = {spellname = "NasusE", spellSlot = "E", radius = 400, maxDistance = 650, speed = 0, delay = 200, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Nautilus"] = {
+			Name = "Nautilus",
+			SkillData = {
+				["NautilusAnchorDrag"] = {spellname = "NautilusAnchorDrag", spellSlot = "Q", radius = 80, maxDistance = 1080, speed = 2000, delay = 200, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Nidalee"] = {
+			Name = "Nidalee",
+			SkillData = {
+				["JavelinToss"] = {spellname = "JavelinToss", spellSlot = "Q", radius = 60, maxDistance = 1500, speed = 1300, delay = 125, shotType = "Line", single = true, canWall = true, canDash = true}
+			}
+		},
+		["Nocturne"] = {
+			Name = "Nocturne",
+			SkillData = {
+				["NocturneDuskbringer"] = {spellname = "NocturneDuskbringer", spellSlot = "Q", radius = 60, maxDistance = 1200, speed = 1400, delay = 250, projName = "NocturneDuskbringer_mis.troy", shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Olaf"] = {
+			Name = "Olaf",
+			SkillData = {
+				["OlafAxeThrow"] = {spellname = "OlafAxeThrow", spellSlot = "Q", radius = 90, maxDistance = 1000, speed = 1600, delay = 250, projName = "olaf_axe_mis.troy", shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Orianna"] = {
+			Name = "Orianna",
+			SkillData = {
+				["OrianaIzunaCommand"] = {spellname = "OrianaIzunaCommand", spellSlot = "Q", radius = 80, maxDistance = 825, speed = 1200, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Pantheon"] = {
+			Name = "Pantheon",
+			SkillData = {
+				["SpearShot"] = {spellname = "SpearShot", spellSlot = "Q", radius = 0, maxDistance = 600, speed = 1200, delay = 250, shotType = "Line", canWall = true, canDash = false},
+				["Pantheon_Heartseeker"] = {spellname = "SpearShot", spellSlot = "Q", radius = 200, maxDistance = 600, speed = 2000, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Quinn"] = {
+			Name = "Quinn",
+			SkillData = {
+				["QuinnQ"] = {spellname = "QuinnQ", spellSlot = "Q", radius = 80, maxDistance = 1050, speed = 1550, delay = 250, shotType = "Line", single = true, projName = "Quinn_Q_missile.troy", canWall = true, canDash = true}
+			}
+		},
+		["Rumble"] = {
+			Name = "Rumble",
+			SkillData = {
+				["RumbleGrenade"] = {spellname = "RumbleGrenade", spellSlot = "E", radius = 90, maxDistance = 800, speed = 2000, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["Flamespitter"] = {spellname = "Flamespitter", spellSlot = "Q", radius = 90, maxDistance = 650, speed = 0, delay = 250, shotType = "Cone", canWall = true, canDash = true}
+			}
+		},
+		["Ryze"] = {
+			Name = "Ryze",
+			SkillData = {
+				["RyzeQ"] = {spellname = "RyzeQ", spellSlot = "Q", radius = 50, maxDistance = 900, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Zyra"] = {
+			Name = "Zyra",
+			SkillData = {
+				["ZyraGraspingRoots"] = {spellname = "ZyraGraspingRoots", spellSlot = "E", radius = 70, maxDistance = 1150, speed = 1150, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["TwistedFate"] = {
+			Name = "TwistedFate",
+			SkillData = {
+				["WildCards"] = {spellname = "WildCards", spellSlot = "E", radius = 40, maxDistance = 1450, speed = 1000, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Swain"] = {
+			Name = "Swain",
+			SkillData = {
+				["SwainShadowGrasp"] = {spellname = "SwainShadowGrasp", spellSlot = "E", radius = 180, maxDistance = 900, speed = 1000, delay = 250, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Sivir"] = {
+			Name = "Sivir",
+			SkillData = {
+				["SivirQ"] = {spellname = "SivirQ", spellSlot = "E", radius = 101, maxDistance = 1175, speed = 1350, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Zed"] = {
+			Name = "Zed",
+			SkillData = {
+				["ZedShuriken"] = {spellname = "ZedShuriken", spellSlot = "Q", radius = 50, maxDistance = 925, speed = 1700, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Leblanc"] = {
+			Name = "Leblanc",
+			SkillData = {
+				["LeblancSoulShackle"] = {spellname = "LeblancSoulShackle", spellSlot = "Q", radius = 70, maxDistance = 960, speed = 1600, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["LeblancSoulShackleM"] = {spellname = "LeblancSoulShackleM", spellSlot = "Q", radius = 70, maxDistance = 960, speed = 1600, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Lulu"] = {
+			Name = "Lulu",
+			SkillData = {
+				["LuluQ"] = {spellname = "LuluQ", spellSlot = "Q", radius = 50, maxDistance = 1000, speed = 1450, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Thresh"] = {
+			Name = "Thresh",
+			SkillData = {
+				["ThreshQ"] = {spellname = "ThreshQ", spellSlot = "Q", radius = 65, maxDistance = 1100, speed = 1900, delay = 500, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Shen"] = {
+			Name = "Shen",
+			SkillData = {
+				["ShenShadowDash"] = {spellname = "ShenShadowDash", spellSlot = "Q", radius = 50, maxDistance = 575, speed = 3000, delay = 0, shotType = "Line", canWall = false, canDash = true}
+			}
+		},
+		["Varus"] = {
+			Name = "Varus",
+			SkillData = {
+				["VarusQ"] = {spellname = "VarusQ", spellSlot = "Q", radius = 70, maxDistance = 1600, speed = 1900, delay = 0, shotType = "Line", canWall = true, canDash = true},
+				["VarusE"] = {spellname = "VarusE", spellSlot = "E", radius = 275, maxDistance = 925, speed = 1500, delay = 250, shotType = "Circle", canWall = false, canDash = true},
+				["VarusR"] = {spellname = "VarusR", spellSlot = "R", radius = 100, maxDistance = 1250, speed = 1950, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Xerath"] = {
+			Name = "Xerath",
+			SkillData = {
+				["XerathArcanopulse"] = {spellname = "XerathArcanopulse", spellSlot = "Q", radius = 100, maxDistance = 1025, speed = math.huge, delay = 1375, shotType = "Line", canWall = true, canDash = true},
+				["xeratharcanopulseextended"] = {spellname = "xeratharcanopulseextended", spellSlot = "Q", radius = 100, maxDistance = 1625, speed = math.huge, delay = 1375, shotType = "Line", canWall = true, canDash = true},
+				["VarusR"] = {spellname = "VarusR", spellSlot = "R", radius = 100, maxDistance = 1250, speed = 1950, delay = 250, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Viktor"] = {
+			Name = "Viktor",
+			SkillData = {
+				["ViktorDeathRay"] = {spellname = "ViktorDeathRay", spellSlot = "Q", radius = 80, maxDistance = 700, speed = 780, delay = 500, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Ziggs"] = {
+			Name = "Ziggs",
+			SkillData = {
+				["ZiggsQ"] = {spellname = "ZiggsQ", spellSlot = "Q", radius = 155, maxDistance = 2000, speed = 3000, delay = 250, shotType = "Line", canWall = true, canDash = true},
+				["ZiggsW"] = {spellname = "ZiggsW", spellSlot = "W", radius = 210, maxDistance = 2000, speed = 3000, delay = 250, shotType = "Circle", canWall = false, canDash = true},
+				["ZiggsE"] = {spellname = "ZiggsE", spellSlot = "E", radius = 235, maxDistance = 2000, speed = 3000, delay = 250, shotType = "Circle", canWall = false, canDash = true}
+			}
+		},
+		["Bard"] = {
+			Name = "Bard",
+			SkillData = {
+				["BardQ"] = {spellname = "BardQ", spellSlot = "Q", radius = 60, maxDistance = 950, shotType = "Line", canWall = true, canDash = true}
+			}
+		},
+		["Veigar"] = {
+			Name = "Veigar",
+			SkillData = {
+				["VeigarBalefulStrike"] = {spellname = "VeigarBalefulStrike", spellSlot = "Q", radius = 70, maxDistance = 950, shotType = "Line", canWall = true, canDash = true},
+				["VeigarDarkMatter"] = {spellname = "VeigarDarkMatter", spellSlot = "W", radius = 225, maxDistance = 900, delay = 250, shotType = "Line", canWall = false, canDash = true}
+			}
+		}
+	}
+
+end
+
+function EvadeManager:AddDashSpell(spell, spellFriendly, castType, info, target, prefKill)
+	if spell and castType and range and delay then
+		self.dashSpells[spellFriendly] = {
+			slot = spell,
+			pretty = spellFriendly,
+			type = castType,
+			spellInfo = info,
+			targetType = "enemy",
+			preferKill = prefKill
+		}
 	end
 	
-	return 100 / (100 + ((target.magicArmor * unit.magicPenPercent) - unit.magicPen))
+	self.isUsing = true
 end
 
-function CalcArmor(unit, target) --Credit: PewPewPew
-	if BaseArmor[target.charName] then
-		local ids, bonusArmorPenPercent = {[3035]=.7, [3033]=.55, [3036]=.55}, 1
-		for i=ITEM_1, ITEM_6 do
-			local item = unit:getItem(i)
-			if item and ids[item.id] then
-				bonusArmorPenPercent = ids[item.id]
-				break
+function EvadeManager:OnDeleteObj(object)
+	if not self.isUsing then return end
+	if object == nil or object.spellName == nil or object.spellName == "" or object.spellName:find("ChaosMinion") or object.spellName:find("Turret_Order") or object.spellName:find("OrderMinion") or self.evadeCount <= 1 then return end
+	for i, skillshot in pairs(self.evadeSkillShotQue) do
+		if object.spellName:find(skillshot.spellname) then
+			self.evadeSkillShotQue[i] = nil
+			self.evadeSkillShotObjectQue[i] = nil
+			self.evadeCount = self.evadeCount - 1
+			return
+		end
+	end
+end
+
+function EvadeManager:AutoExpireEvades()
+	if not self.isUsing then return end
+	if self.evadeCount <= 1 then return end
+	for i, skillshot in pairs(self.evadeSkillShotObjectQue) do
+		if skillshot.when + (3600 * 2) < os.clock() then
+			print("Removing [" .. self.evadeSkillShotQue[i].spellname .. "] from Que.")
+			self.evadeSkillShotQue[i] = nil
+			self.evadeSkillShotObjectQue[i] = nil
+			self.evadeCount = self.evadeCount - 1
+		end
+	end
+end
+
+function EvadeManager:EvadeTick()
+	if self.evadeCount <= 1 then return end
+	if self.deltaTime == 0 then
+		self.deltaTime = GetTickCount()
+	end
+	if GetTickCount() == self.deltaTime * ( self.humanizerMultiplicator * 1000 ) then
+		for i, spell in pairs(self.evadeSkillShotQue) do
+			if spell.shotType == "Line" then
+				print("Evading " .. spell.spellname)
+				EvadeLineShot(self.evadeSkillShotQue[i], self.evadeSkillShotObjectQue[i])
+				self.deltaTime = 0
+				return
 			end
 		end
-		local baseArmor = BaseArmor[target.charName].Base + (BaseArmor[target.charName].PerLvl * (target.level - 1))
-		local bonusArmor = target.armor - baseArmor
-		
-		return 100 / (100 + (((bonusArmor * bonusArmorPenPercent) + baseArmor) * unit.armorPenPercent) - unit.armorPen)
 	end
-	return 100 / (100 + ((target.armor * unit.armorPenPercent) - unit.armorPen))
 end
 
-function IsHeroAboveHPPercent(hero, percent)
-	if hero.health > 0 and percent >= (hero.health/hero.maxHealth) * 100 then
-		return true
+function EvadeManager:DashHandler(unit,spell)
+	if not self.isUsing then return end
+	local selectedDash = nil
+	for d, dashSpell in pairs(self.dashSpells) do
+		if dashSpell and myHero:CanUseSpell(dashSpell.slot) ~= READY then
+			selectedDash = dashSpell
+			print("Set dash as " .. dashSpell.pretty)
+		end
 	end
-	return false
-end
-
-function IsHeroBelowHPPercent(hero, percent)
-	if hero.health > 0 and percent <= (hero.health/hero.maxHealth) * 100 then
-		return true
+	
+	if selectedDash == nil then return end
+	
+	if (_G.DancingShoes_Loaded and _G.Evade) or (_G.AE and _G.AE_isEvading) then
+		if self.hasShownEvadeMessage == false then
+			_G.azBundle.PrintManager:Evade("Disabling internal evade due to external evade script.")
+			self.hasShownEvadeMessage = true
+		end
 	end
-	return false
-end
-
-function IsHeroAboveManaPercent(hero, percent)
-	if hero.mana > 0 and percent >= (hero.mana/hero.maxMana) * 100 then
-		return true
-	end
-	return false
-end
-
-function IsHeroBelowManaPercent(hero, percent)
-	if hero.mana > 0 and percent <= (hero.mana/hero.maxMana) * 100 then
-		return true
-	end
-	return false
-end
-
-function DoYouEvenExtend(sP, eP, add, max, min)
-	local s1x, s1y, s1z = sP.x, sP.y, sP.z
-	local dx, dy, dz = eP.x - s1x, eP.y - s1y, eP.z - s1z
-	local d = dx * dx + dy * dy + dz * dz
-	local d = add and math.max(max or 0, math.min(min or math.huge, d + add)) or math.max(max or 0, math.min(min or math.huge, d))
-	return Vector(s1x + dx * d, s1y + dy * d, s1z * dz * d)
-end
-
---Display
-antiSpamLastMessage = nil
-function PrintPretty(message, debug, antiSpam)
-	if debug and not _G.ZeroConfig.shouldWeDebug then return end
-
-	if antiSpam and antiSpamLastMessage ~= nil and antiSpamLastMessage == message then return end
-
-	fontColor = "3393FF"
-	if debug then fontColor = "EC33FF" end
-
-	print("<font color=\"#FF5733\">[<u>" .. _G.ZeroConfig.scriptName .. "</u>]</font> <font color=\"#" .. fontColor .. "\">" .. message .. "</font>")
-	antiSpamLastMessage = message
-end
-
---Dash Detection
-function OnNewPath(unit, startPos, endPos, isDash, dashSpeed, dashGravity, dashDistance)
-	if unit.type == myHero.type and unit.team ~= myHero.team and isDash and GetDistance(endPos, myHero.pos) <= 850 then
-		if _G.ZeroConfig.printEnemyDashes then
-			PrintPretty("Unit [" .. unit.charName .. "] Dash Detected [S:" .. dashSpeed .. "] [G:"..dashGravity.."] [D:"..dashDistance.."]", false, true)
+	if unit.team ~= myHero.team and not myHero.dead and not (unit.type == "obj_AI_Minion" and unit.type == "obj_AI_Turret") and unit.type == ("AIHeroClient" or myHero.type) then
+		skillShotData = nil
+		if self.ChampData[unit.charName] ~= nil and self.ChampData[unit.charName].SkillData[spell.name] ~= nil then
+			skillShotData = self.ChampData[unit.charName].SkillData[spell.name]
+		end
+		print("found data for " .. spell.name)
+		if skillShotData and ((_G.Evadeee_Enabled and _G.Evadeee_Loaded and _G.Evadeee_impossibleToEvade) or not _G.Evadeee_Enabled) and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
+			self.evadeSkillShotQue[self.evadeCount] = skillShotData
+			self.evadeSkillShotObjectQue[self.evadeCount] = {name = skillShotData.spellname, startPos = Vector(spell.startPos), endPos = Vector(spell.endPos), when = os.clock()}
+			self.evadeCount = self.evadeCount + 1
+			
+			for i=1, heroManager.iCount do
+				local allytarget = heroManager:GetHero(i)
+				if allytarget.isMe and allytarget.team == myHero.team and not allytarget.dead and allytarget.health > 0 then
+					local allyHitBox = allytarget.boundingRadius or 65
+					local whoWillGetHit = false
+					
+					if skillShotData.shotType == "Line" and single then
+						whoWillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					elseif skillShotData.shotType == "Line" then
+						whoWillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					elseif skillShotData.shotType == "AoE" then
+						whoWillGetHit = checkhitaoe(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					elseif skillShotData.shotType == "Cone" then
+						whoWillGetHit = checkhitcone(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					elseif skillShotData.shotType == "Wall" then
+						whoWillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					elseif skillShotData.shotType == "AdvLine" then
+						whoWillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
+					end
+					
+					if whoWillGetHit then
+						_G.azBundle.PrintManager:Evade("Detected [" .. allytarget.charName .. "] will get hit by [" .. spell.name .. "].")
+						if allytarget.isMe then
+							if skillShotData.canDash and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
+								
+								if selectedDash.type == "target" and selectedDash.targetType == "enemy" and selectedDash.preferKill then
+									local bestDashTarget = nil
+									for eI, enemyI in pairs(GetEnemyHeroes()) do
+										if enemyI and ValidTarget(enemyI, selectedDash.spellInfo.range) and enemyI.health < selectedDash.spellInfo:Damage(myHero, enemyI) and not UnderTurret(enemyI.pos) then
+											local stillGetHit = nil
+											if skillShotData.shotType == "Line" then
+												if single then
+													stillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+												else
+													stillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+												end
+											elseif skillShotData.shotType == "AoE" then
+												stillGetHit = checkhitaoe(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+											elseif skillShotData.shotType == "Cone" then
+												stillGetHit = checkhitcone(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+											elseif skillShotData.shotType == "Wall" then
+												stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+											elseif skillShotData.shotType == "AdvLine" then
+												stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, enemyI.pos, myHero.boundingRadius)
+											end
+											
+											if stillGetHit then 
+												bestDashTarget = enemyI
+												break
+											end
+										end
+									end
+									if not bestDashTarget then
+										for mI, minionI in pairs(_G.azBundle.Champion.target.minion.objects) do
+											if minionI and ValidTarget(minionI, selectedDash.spellInfo.range) and minionI.health < selectedDash.spellInfo:Damage(myHero, minionI) then
+												local stillGetHit = nil
+												if skillShotData.shotType == "Line" then
+													if single then
+														stillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+													else
+														stillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+													end
+												elseif skillShotData.shotType == "AoE" then
+													stillGetHit = checkhitaoe(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "Cone" then
+													stillGetHit = checkhitcone(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "Wall" then
+													stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "AdvLine" then
+													stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, minionI.pos, myHero.boundingRadius)
+												end
+												
+												if stillGetHit then 
+													bestDashTarget = minionI
+													break
+												end
+											end
+										end
+									end
+									if not bestDashTarget then
+										for jI, jungleI in pairs(_G.azBundle.Champion.target.jungle.objects) do
+											if minionI and ValidTarget(jungleI, selectedDash.spellInfo.range) and jungleI.health < selectedDash.spellInfo:Damage(myHero, jungleI) then
+												local stillGetHit = nil
+												if skillShotData.shotType == "Line" then
+													if single then
+														stillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+													else
+														stillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+													end
+												elseif skillShotData.shotType == "AoE" then
+													stillGetHit = checkhitaoe(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "Cone" then
+													stillGetHit = checkhitcone(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "Wall" then
+													stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+												elseif skillShotData.shotType == "AdvLine" then
+													stillGetHit = checkhitwall(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, jungleI.pos, myHero.boundingRadius)
+												end
+												
+												if stillGetHit then 
+													bestDashTarget = jungleI
+													break
+												end
+											end
+										end
+									end
+									if bestWallSpot then
+										CastSpell(selectedDash.slot, bestDashTarget)
+										_G.azBundle.PrintManager:Evade("Dashing to [" .. bestDashTarget.charName .. "] to avoid [" .. self.ChampData[unit.charName].Name .. " " .. skillShotData.spellSlot .. "].")
+										return
+									end
+								end
+							end
+							_G.azBundle.PrintManager:Evade("Unable to avoid [" .. self.ChampData[unit.charName].Name .. " " .. skillShotData.spellSlot .. "].")
+						end
+					end
+				end
+			end
 		end
 	end
 end
 
-function OnLoad()
-	PrintPretty("Zer0 Bundle Loading....", false, true)
+function EvadeManager:EvadeDraw()
+	if not self.isUsing then return end
+	for i, skillshot in pairs(self.evadeSkillShotObjectQue) do
+		if self.evadeSkillShotObjectQue[i] ~= nil and self.evadeSkillShotQue[i] ~= nil then
+			if(self.evadeSkillShotQue[i].shotType == "Circle") then
+			   DrawCircle3D(skillshot.endPos.x,skillshot.endPos.y,skillshot.endPos.z)
+			elseif self.evadeSkillShotQue[i].shotType == "Line" then
+				DrawLineBorder3D(skillshot.startPos.x, skillshot.startPos.y, skillshot.startPos.z, skillshot.endPos.x, skillshot.endPos.y, skillshot.endPos.z, self.evadeSkillShotQue[i].radius * 2, ARGB(255,255,255,255), 1)
+			end
+		end
+	end
+end
 
-	if _G.ZeroConfig.autoUpdate then
-		local ServerData = GetWebResult(_G.ZeroConfig.updateHost, "/azer0/0BoL/master/Version/Zer0.Version")
-		if ServerData then
-			ServerVersion = type(tonumber(ServerData)) == "number" and tonumber(ServerData) or nil
-			if ServerVersion then
-				print("Current: " .. _G.ZeroConfig.ZVersion .. " - Server: " .. ServerVersion)
-				if tonumber(_G.ZeroConfig.ZVersion) < ServerVersion then
-					print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Update available, version: " .. ServerVersion .. ".</font>")
-					print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Please do not press F9 until update has been completed.</font>")
-					DelayAction(function() DownloadFile(_G.ZeroConfig.updateURL, _G.ZeroConfig.updateFilePath, function () print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Updated! Old Version: ".. _G.ZeroConfig.ZVersion .." => New Version: "..ServerVersion..", please press F9 two times.") end) end, 3)
+--[[-----------------------------------------------------
+----------------------/EVADE MANAGER---------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+----------------------UNIT CHECKS------------------------
+-----------------------------------------------------]]--
+class("UnitChecks")
+function UnitChecks:__init()
+	
+end
+
+
+--[[-----------------------------------------------------
+---------------------/UNIT CHECKS-----------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+-----------------------AWARE-----------------------------
+-----------------------------------------------------]]--
+class("AwareManager")
+function AwareManager:__init()
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Awareness Settings <<", "Aware")
+		
+		_G.azBundle.MenuManager.menu.Aware:addSubMenu(">> Gank Alert Settings <<", "Gank")
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("enable", "Use Gank Tracker", SCRIPT_PARAM_ONOFF, true)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("range", "Max Scan Range", SCRIPT_PARAM_SLICE, 5000,50,10000,0)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("lineWidth", "Line Width", SCRIPT_PARAM_SLICE, 3,1,10,0)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("drawLine", "Draw Line", SCRIPT_PARAM_ONOFF, true)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("fontSize", "Font Size", SCRIPT_PARAM_SLICE, 18,1,30,0)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("fontColor", "Font Color", SCRIPT_PARAM_COLOR, {255, 255, 255, 255})
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("drawText", "Draw Text", SCRIPT_PARAM_ONOFF, true)
+			_G.azBundle.MenuManager.menu.Aware.Gank:addParam("emptySpace4", "", SCRIPT_PARAM_INFO, "")
+			for _, enemy in pairs(GetEnemyHeroes()) do
+				if enemy then
+					_G.azBundle.MenuManager.menu.Aware.Gank:addParam("enable" .. enemy.charName, "Enable For " .. enemy.charName, SCRIPT_PARAM_ONOFF, true)
 				end
+			end
+		
+		_G.azBundle.MenuManager.menu.Aware:addSubMenu(">> Cooldown Tracking Settings <<", "CD")
+			_G.azBundle.MenuManager.menu.Aware.CD:addParam("enable", "Use Gank Tracker", SCRIPT_PARAM_ONOFF, true)
+			_G.azBundle.MenuManager.menu.Aware.CD:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+			for _, enemy in pairs(GetEnemyHeroes()) do
+				if enemy then
+					_G.azBundle.MenuManager.menu.Aware.CD:addParam("enable" .. enemy.charName, "Enable For " .. enemy.charName, SCRIPT_PARAM_ONOFF, true)
+				end
+			end
+			_G.azBundle.MenuManager.menu.Aware.CD:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+			for _, enemy in pairs(GetAllyHeroes()) do
+				if enemy then
+					_G.azBundle.MenuManager.menu.Aware.CD:addParam("allyEnable" .. enemy.charName, "Enable For " .. enemy.charName, SCRIPT_PARAM_ONOFF, true)
+				end
+			end
+	
+	self.ChampInfo = {}
+	for i, enemy in ipairs(GetEnemyHeroes()) do
+		self.ChampInfo[enemy.charName] = {
+			CD = {
+				["Q"] = false,
+				["W"] = false,
+				["E"] = false,
+				["R"] = false,
+				["S1"] = false,
+				["S2"] = false
+			}
+		}
+	end
+	
+	self.setup = true
+end
+
+function AwareManager:Tick()
+	for _, enemy in pairs(GetEnemyHeroes()) do
+		if _G.azBundle.MenuManager.menu.Aware.CD.enable and _G.azBundle.MenuManager.menu.Aware.CD["enable" .. enemy.charName] then
+			if enemy:GetSpellData(_Q).level > 0 then
+				self.ChampInfo[enemy.charName].CD["Q"] = math.ceil(enemy:GetSpellData(_Q).currentCd)
+			end
+			if enemy:GetSpellData(_W).level > 0 then
+				self.ChampInfo[enemy.charName].CD["W"] = math.ceil(enemy:GetSpellData(_W).currentCd)
+			end
+			if enemy:GetSpellData(_E).level > 0 then
+				self.ChampInfo[enemy.charName].CD["E"] = math.ceil(enemy:GetSpellData(_E).currentCd)
+			end
+			if enemy:GetSpellData(_R).level > 0 then
+				self.ChampInfo[enemy.charName].CD["R"] = math.ceil(enemy:GetSpellData(_R).currentCd)
+			end
+			self.ChampInfo[enemy.charName].CD["S1"] = math.ceil(enemy:GetSpellData(SUMMONER_1).currentCd)
+			self.ChampInfo[enemy.charName].CD["S2"] = math.ceil(enemy:GetSpellData(SUMMONER_2).currentCd)
+		end
+	end
+end
+
+function AwareManager:Draw()
+	if not self.setup then return end
+	
+	for _, enemy in pairs(GetEnemyHeroes()) do
+		if enemy and ValidTarget(enemy, _G.azBundle.MenuManager.menu.Aware.Gank.range) then
+			local eDist = GetDistance(enemy)
+			if _G.azBundle.MenuManager.menu.Aware.Gank.enable and _G.azBundle.MenuManager.menu.Aware.Gank["enable" .. enemy.charName] and (_G.azBundle.MenuManager.menu.Aware.Gank.drawLine or _G.azBundle.MenuManager.menu.Aware.Gank.drawText) then
+				local drawColor = nil
+				if eDist >= 4000 then
+					drawColor = ARGB(255, 0, 255, 0)
+				elseif eDist >= 2500 then
+					drawColor = ARGB(255, 255, 215, 0)
+				elseif eDist < 2500 then
+					drawColor = ARGB(255,255,0,0)
+				end
+				
+				if drawColor then
+					if _G.azBundle.MenuManager.menu.Aware.Gank.drawLine then
+						DrawLine3D2(enemy.x, enemy.y, enemy.z, myHero.x, myHero.y, myHero.z, _G.azBundle.MenuManager.menu.Aware.Gank.lineWidth, drawColor)
+					end
+					if _G.azBundle.MenuManager.menu.Aware.Gank.drawText then
+						local vec = CalcVector(myHero,enemy) * -250
+						DrawText3D(enemy.charName .. ": " .. math.round(GetDistance(enemy, myHero)), vec.x+myHero.x, vec.y+myHero.y, vec.z+myHero.z, _G.azBundle.MenuManager.menu.Aware.Gank.fontSize, _G.azBundle.MenuManager.menu.Aware.Gank.fontColor)
+					end
+				end
+			end
+		end
+			
+		if enemy and ValidTarget(enemy) and _G.azBundle.MenuManager.menu.Aware.CD and _G.azBundle.MenuManager.menu.Aware.CD["enable" .. enemy.charName] then
+			local barPos = GetUnitHPBarPos(enemy)
+			local off = GetUnitHPBarOffset(enemy)
+			local y = barPos.y + (off.y * 53) + 2
+			local xOff = ({['AniviaEgg'] = -0.1,['Darius'] = -0.05,['Renekton'] = -0.05,['Sion'] = -0.05,['Thresh'] = -0.03,})[enemy.charName]
+			local x = barPos.x + ((xOff or 0) * 140) + 50
+			if OnScreen(barPos.x, barPos.y) and not enemy.dead and enemy.visible then
+				if self.ChampInfo[enemy.charName].CD["Q"] ~= false then
+					DrawText("Q: " .. self.ChampInfo[enemy.charName].CD["Q"], 15, x-118.875, y+15, 0xFFFFFFFF)
+				else
+					DrawText("Q: X", 15, x-118.875, y+15, 0xFFFFFFFF)
+				end
+				
+				if self.ChampInfo[enemy.charName].CD["W"] ~= false then
+					DrawText("W: " .. self.ChampInfo[enemy.charName].CD["W"], 15, x-88.875, y+15, 0xFFFFFFFF)
+				else
+					DrawText("W: X", 15, x-88.875, y+15, 0xFFFFFFFF)
+				end
+				
+				if self.ChampInfo[enemy.charName].CD["E"] ~= false then
+					DrawText("E: " .. self.ChampInfo[enemy.charName].CD["E"], 15, x-58.875, y+15, 0xFFFFFFFF)
+				else
+					DrawText("E: X", 15, x-58.875, y+15, 0xFFFFFFFF)
+				end
+				
+				if self.ChampInfo[enemy.charName].CD["R"] ~= false then
+					DrawText("R: " .. self.ChampInfo[enemy.charName].CD["R"], 15, x-28.875, y+15, 0xFFFFFFFF)
+				else
+					DrawText("R: X", 15, x-28.875, y+15, 0xFFFFFFFF)
+				end
+				s1Label = "H"
+				if enemy:GetSpellData(SUMMONER_1).name == "SummonerDot" then
+					s1Label = "I"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerFlash" then
+					s1Label = "F"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerExhaust" then
+					s1Label = "E"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerHaste" then
+					s1Label = "G"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerHeal" then
+					s1Label = "H"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerBarrier" then
+					s1Label = "B"
+				elseif enemy:GetSpellData(SUMMONER_1).name == "SummonerTeleport" then
+					s1Label = "T"
+				else
+					print(enemy:GetSpellData(SUMMONER_1).name)
+				end
+				
+				s2Label = "H"
+				if enemy:GetSpellData(SUMMONER_2).name == "SummonerDot" then
+					s2Label = "I"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerFlash" then
+					s2Label = "F"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerExhaust" then
+					s2Label = "E"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerHaste" then
+					s2Label = "G"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerHeal" then
+					s2Label = "H"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerBarrier" then
+					s2Label = "B"
+				elseif enemy:GetSpellData(SUMMONER_2).name == "SummonerTeleport" then
+					s2Label = "T"
+				else
+					print(enemy:GetSpellData(SUMMONER_2).name)
+				end
+				DrawText(s1Label .. ": " .. self.ChampInfo[enemy.charName].CD["S1"], 15, x-155, y, 0xFFFFFFFF)
+				DrawText(s2Label .. ": " .. self.ChampInfo[enemy.charName].CD["S2"], 15, x-155, y+15, 0xFFFFFFFF)
+			end
+		end
+	end
+end
+--[[-----------------------------------------------------
+-----------------------/AWARE----------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+----------------------ITEM DMG---------------------------
+-----------------------------------------------------]]--
+class("ItemDmgManager")
+function ItemDmgManager:__init()
+	self.sheenProc = false
+	
+	self.itemInfo = {
+		["Sheen"] = {
+			ready = false,
+			slot = nil,
+			seen = false,
+			buffed = false,
+			id = 3057
+		},
+		["TriForce"] = {
+			ready = false,
+			slot = nil,
+			seen = false,
+			id = 3078
+		},
+		["Lichbane"] = {
+			ready = false,
+			slot = nil,
+			seen = false,
+			id = 3100
+		},
+		["BoRK"] = {
+			ready = false,
+			slot = nil,
+			seen = false,
+			id = 3153,
+			range = 450
+		}
+	}
+end
+
+function ItemDmgManager:SheenItem()
+	if self.itemInfo["Sheen"].seen then
+		return "S"
+	elseif self.itemInfo["TriForce"].seen then
+		return "T"
+	elseif self.itemInfo["Lichbane"].seen then
+		return "L"
+	end
+end
+
+function ItemDmgManager:Tick()
+	--------------
+	--START: SHEEN
+	self.itemInfo["Sheen"].slot = GetInventorySlotItem(self.itemInfo["Sheen"].id)
+	
+	if self.itemInfo["Sheen"].slot then
+		if not self.itemInfo["Sheen"].seen then
+			_G.azBundle.PrintManager:General("Item [Sheen] found and added to damage calculations.")
+			self.itemInfo["Sheen"].seen = true
+		end
+	else
+		if self.itemInfo["Sheen"].seen then
+			_G.azBundle.PrintManager:General("Item [Sheen] sold and removed from damage calculations.")
+			self.itemInfo["Sheen"].seen = false
+		end 
+	end
+	
+	if self.itemInfo["Sheen"].slot ~= nil and myHero:CanUseSpell(self.itemInfo["Sheen"].slot) == READY then
+		self.itemInfo["Sheen"].ready = true
+	end
+	--END: SHEEN
+	
+	--------------
+	--START: TRIFORCE
+	self.itemInfo["TriForce"].slot = GetInventorySlotItem(self.itemInfo["TriForce"].id)
+	
+	if self.itemInfo["TriForce"].slot then
+		if not self.itemInfo["TriForce"].seen then
+			_G.azBundle.PrintManager:General("Item [Trinity Force] found and added to damage calculations.")
+			self.itemInfo["TriForce"].seen = true
+		end
+	else
+		if self.itemInfo["TriForce"].seen then
+			_G.azBundle.PrintManager:General("Item [Trinity Force] sold and removed from damage calculations.")
+			self.itemInfo["TriForce"].seen = false
+		end 
+	end
+	
+	if self.itemInfo["TriForce"].slot ~= nil and myHero:CanUseSpell(self.itemInfo["TriForce"].slot) == READY then
+		self.itemInfo["TriForce"].ready = true
+	end
+	--END: TRIFORCE
+	
+	--------------
+	--START: LICHBANE
+	self.itemInfo["Lichbane"].slot = GetInventorySlotItem(self.itemInfo["Lichbane"].id)
+	
+	if self.itemInfo["Lichbane"].slot then
+		if not self.itemInfo["Lichbane"].seen then
+			_G.azBundle.PrintManager:General("Item [Lich Bane] found and added to damage calculations.")
+			self.itemInfo["Lichbane"].seen = true
+		end
+	else
+		if self.itemInfo["Lichbane"].seen then
+			_G.azBundle.PrintManager:General("Item [Lich Bane] sold and removed from damage calculations.")
+			self.itemInfo["Lichbane"].seen = false
+		end 
+	end
+	
+	if self.itemInfo["Lichbane"].slot ~= nil and myHero:CanUseSpell(self.itemInfo["Lichbane"].slot) == READY then
+		self.itemInfo["Lichbane"].ready = true
+	end
+	--END: LICHBANE
+	
+	--------------
+	--START: Blade of the Ruined King
+	self.itemInfo["BoRK"].slot = GetInventorySlotItem(self.itemInfo["BoRK"].id)
+	
+	if self.itemInfo["BoRK"].slot then
+		if not self.itemInfo["BoRK"].seen then
+			_G.azBundle.PrintManager:General("Item [Blade of the Ruined King] found and added to damage calculations.")
+			self.itemInfo["BoRK"].seen = true
+		end
+	else
+		if itemInfo["BoRK"].seen then
+			_G.azBundle.PrintManager:General("Item [Blade of the Ruined King] sold and removed from damage calculations.")
+			self.itemInfo["BoRK"].seen = false
+		end 
+	end
+	
+	if itemInfo["BoRK"].slot ~= nil and myHero:CanUseSpell(itemInfo["BoRK"].slot) == READY then
+		self.itemInfo["BoRK"].ready = true
+	end
+	--END: Blade of the Ruined King
+	--------------
+end
+
+function ItemDmgManager:OnApplyBuff(source, unit, buff)
+	if source.isMe and buff.name == "sheen" then
+		self.sheenProc = true
+	end
+end
+
+function ItemDmgManager:OnRemoveBuff(unit, buff)
+	if source.isMe and buff.name == "sheen" then
+		self.sheenProc = true
+	end
+end
+
+function ItemDmgManager:LudensEcho(target)
+	if not self.sheenProc then return 0 end
+	local totalAP = myHero.ap * (1 + myHero.apPercent)
+	local LudensDMG = (totalAP * 0.1) + 100
+	return player:CalcMagicDamage(target, LudensDMG)
+end
+
+function ItemDmgManager:Cutlass(target)
+	return player:CalcMagicDamage(target, 100)
+end
+
+function ItemDmgManager:Gunblade(target)
+	local totalAP = myHero.ap * (1 + myHero.apPercent)
+	local GunbladeDMG = (totalAP * 0.3) + 250
+	return player:CalcMagicDamage(target, GunbladeDMG)
+end
+
+function ItemDmgManager:GLP800(target)
+	local totalAP = myHero.ap * (1 + myHero.apPercent)
+	local BaseDamage = { 100, 106, 112, 118, 124, 130, 136, 141, 147, 153, 159, 165, 171, 176, 182, 188, 194, 200}
+	local GLP800DMG = BaseDamage[myHero.level] + (totalAP * 0.35)
+	return player:CalcMagicDamage(target, GLP800DMG)
+end
+
+function ItemDmgManager:Protobelt(target)
+	local totalAP = myHero.ap * (1 + myHero.apPercent)
+	local BaseDamage = { 75, 79, 83, 88, 92, 97, 101, 106, 110, 115, 119, 124, 128, 132, 137, 141, 146, 150}
+	local HextechProtobelt01DMG = BaseDamage[myHero.level] + (totalAP * 0.35)
+	return player:CalcMagicDamage(target, HextechProtobelt01DMG)
+end
+
+function ItemDmgManager:Iceborn(target)
+	if not self.sheenProc then return 0 end
+	local AD = 1 * (myHero.damage)
+	return player:CalcDamage(target, AD)
+end
+
+function ItemDmgManager:Sheen(target)
+	if not self.sheenProc and self.itemInfo["Sheen"].seen then return 0 end
+	local AD = 1 * (myHero.damage)
+	return player:CalcDamage(target, AD)
+end
+
+function ItemDmgManager:TriForce(target)
+	if not self.sheenProc and self.itemInfo["TriForce"].seen then return 0 end
+	local AD = 2 * (myHero.damage)
+	return player:CalcDamage(target, AD)
+end
+
+function ItemDmgManager:LichBane(target)
+	if not self.sheenProc and self.itemInfo["Lichbane"].seen then return 0 end
+	local AD = (myHero.damage)
+	local AP = myHero.ap * (1 + myHero.apPercent)
+	local LichBaneDamage = ((AP * 0.5) + (AD * 0.75))
+	return player:CalcMagicDamage(target, LichBaneDamage)
+end
+--[[-----------------------------------------------------
+---------------------/ITEM DMG---------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+------------------------MISC-----------------------------
+-----------------------------------------------------]]--
+class("MiscManager")
+function MiscManager:__init()
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Misc Settings <<", "Misc")
+		_G.azBundle.MenuManager.menu.Misc:addParam("onKill", "Show on kill", SCRIPT_PARAM_LIST, 1, {
+			[1] = "Mastery",
+			[2] = "Laugh",
+			[3] = "Dance",
+			[4] = "None"
+		})
+		_G.azBundle.MenuManager.menu.Misc:addParam("pink", "Auto Pink on Invis", SCRIPT_PARAM_ONOFF, true)
+		
+	self.lastKills = myHero.kills
+	self.BuffNames = {"rengarr", "monkeykingdecoystealth", "talonshadowassaultbuff", "vaynetumblefade", "twitchhideinshadows", "khazixrstealth", "akaliwstealth"}
+	--AddNewPathCallback(function(unit, startPos, endPos, isDash ,dashSpeed,dashGravity, dashDistance)
+    --    self:
+    --end)
+end
+
+function MiscManager:Tick()
+	if myHero.kills > self.lastKills then
+		if _G.azBundle.MenuManager.menu.Misc.onKill == 1 then
+			SendChat("/masterybadge")
+		elseif _G.azBundle.MenuManager.menu.Misc.onKill == 2 then
+			SendChat("/l")
+		elseif _G.azBundle.MenuManager.menu.Misc.onKill == 3 then
+			DoEmote(3)
+		end
+		self.lastKills = myHero.kills
+	end
+	
+	if _G.azBundle.MenuManager.menu.Misc.pink then
+		
+	end
+end
+--[[-----------------------------------------------------
+------------------------/MISC----------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+-------------------------IRELIA--------------------------
+-----------------------------------------------------]]--
+class("ChampIrelia")
+function ChampIrelia:__init()
+	_G.azBundle.PrintManager:General("Loaded.")
+	
+	self.ChampData = {
+		useAutoMode = true,
+		useFleeMode = true,
+		useInteruptable = true,
+		useProcessSpell = true,
+		useApplyBuff = true,
+		useRemoveBuff = true,
+		useAntiDash = false
+	}
+	
+	self.target = MyTarget(1200, 650, 650, DAMAGE_PHYSICAL)
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Combo Settings <<", "Combo")
+		_G.azBundle.MenuManager.menu.Combo:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("r", "Use R", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("qGap", "Use Q to Gapclose", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("qTower", "Q Engage Under Tower", SCRIPT_PARAM_ONKEYTOGGLE, false, GetKey("K"))
+		_G.azBundle.MenuManager.menu.Combo:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey(" "))
+		
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Harass Settings <<", "Harass")
+		_G.azBundle.MenuManager.menu.Harass:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("C"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Lane Clear Settings <<", "LaneClear")
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Jungle Clear Settings <<", "JungleClear")
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("key", "Jungle Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Last Hit Settings <<", "LastHit")
+		_G.azBundle.MenuManager.menu.LastHit:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Flee Settings <<", "Flee")
+		_G.azBundle.MenuManager.menu.Flee:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("key", "Flee Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("T"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Auto Settings <<", "Auto")
+		_G.azBundle.MenuManager.menu.Auto:addParam("autoLHQ", "Auto Last Hit with Q", SCRIPT_PARAM_ONKEYTOGGLE, false, GetKey("J"))
+		_G.azBundle.MenuManager.menu.Auto:addParam("autoStunE", "Auto Stun with E", SCRIPT_PARAM_ONKEYTOGGLE, false, GetKey("L"))
+		_G.azBundle.MenuManager.menu.Auto:addParam("levelSequance", "Auto Level Sequance", SCRIPT_PARAM_LIST, 1, {
+			[1] = "Q-W-E-Max W-Max Q",
+			[2] = "E-W-Q-Max W-Max Q",
+			[3] = "W-Q-E-Max W-Max Q",
+			
+			[4] = "Q-W-E-Max Q-Max W",
+			[5] = "E-W-Q-Max Q-Max W",
+			[6] = "W-Q-E-Max Q-Max W",
+			
+			[7] = "Q-W-E-Max E-Max W",
+			[8] = "E-W-Q-Max E-Max W",
+			[9] = "W-Q-E-Max E-Max W",
+		})
+	
+	self.levelSequances = {
+		[1] = {1,2,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[2] = {3,1,2,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[3] = {2,1,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[4] = {1,2,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[5] = {3,2,1,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[6] = {2,1,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[7] = {1,2,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[8] = {3,2,1,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[9] = {2,1,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2}
+	}
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Draw Settings <<", "Draw")
+		_G.azBundle.MenuManager.menu.Draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("qColor", "Q Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("eColor", "E Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("wColor", "W Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("r", "Draw R Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("rColor", "R Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("eStun", "Draw E Stun", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("targetColor", "Target Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
+		
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Evade Settings <<", "Evade")
+		_G.azBundle.MenuManager.menu.Evade:addParam("drawSkills", "Draw Skills", SCRIPT_PARAM_ONOFF, false)
+		for i, enemy in pairs(GetEnemyHeroes()) do
+		if enemy and _G.azBundle.EvadeManager.ChampData[enemy.charName] ~= nil and _G.azBundle.EvadeManager.ChampData[enemy.charName].SkillData ~= nil then
+			for a, spell in pairs(_G.azBundle.EvadeManager.ChampData[enemy.charName].SkillData) do
+				_G.azBundle.MenuManager.menu.Evade:addSubMenu(">> " .. _G.azBundle.EvadeManager.ChampData[enemy.charName].Name .. " " .. spell.spellSlot .. " Settings <<", enemy.charName .. spell.spellSlot)
+					_G.azBundle.MenuManager.menu.Evade[enemy.charName .. spell.spellSlot]:addParam("dash", "Dash Evade Spell", SCRIPT_PARAM_ONOFF, spell.canDash)
+			end
+		end
+	end
+		
+	_G.azBundle.MenuManager.menu.Combo:permaShow("qTower")
+	_G.azBundle.MenuManager.menu.Auto:permaShow("autoLHQ")
+	_G.azBundle.MenuManager.menu.Auto:permaShow("autoStunE")
+end
+
+function ChampIrelia:AARange()
+	return myHero.range + myHero.boundingRadius
+end
+
+function ChampIrelia:ComboMode()
+	self.target.champion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 1200) then
+		
+		if _G.azBundle.MenuManager.menu.Combo.qGap and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) > _G.azBundle.ChampionData.SkillQ.range and not UnderTurret(myTarget) then
+			self.target.minion:update()
+			for m, minion in pairs(self.target.minion.objects) do
+				if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) and GetDistance(minion, myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, minion)
+					break
+				end
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and not UnderTurret(myTarget) then
+			if GetDistance(myTarget) >= self:AARange() * 2 then
+				if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY then
+					CastSpell(_W)
+				end
+				CastSpell(_Q, myTarget)
+				myHero:Attack(myTarget)
+			elseif myTarget.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, myTarget) then
+				if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY then
+					CastSpell(_W)
+				end
+				CastSpell(_Q, myTarget)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= self:AARange() * 1.25 then
+			CastSpell(_W)
+			myHero:Attack(myTarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			if 100 * myTarget.health / myTarget.maxHealth > 100 * myHero.health / myHero.maxHealth then
+				CastSpell(_E, myTarget)
+			elseif (100 * myTarget.health / myTarget.maxHealth) * 1.5 < 100 * myHero.health / myHero.maxHealth then
+				CastSpell(_E, myTarget)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.r and myHero:CanUseSpell(_R) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range * 1.5 then
+			if 100 * myTarget.health / myTarget.maxHealth < 40 then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, math.huge, myHero, false)
+				if HitChance >= 2 then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						CastSpell(_R, CastPosition.x, CastPosition.z)
+					end
+				end
+			end
+		end
+		
+	end
+end
+
+function ChampIrelia:LaneClearMode()
+	self.target.minion:update()
+	
+	if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.LaneClear.qMana then
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+				CastSpell(_Q, minion)
+			end
+		end
+	end
+	
+	if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.LaneClear.wMana then
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, self:AARange()) then
+				CastSpell(_W)
+				return
+			end
+		end
+	end
+end
+
+function ChampIrelia:JungleClearMode()
+	self.target.jungle:update()
+	
+	for m, minion in pairs(self.target.jungle.objects) do
+		if minion and _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.JungleClear.qMana and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+			CastSpell(_Q, minion)
+		end
+		
+		if minion and _G.azBundle.MenuManager.menu.JungleClear.w and myHero:CanUseSpell(_W) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.JungleClear.wMana and ValidTarget(minion, self:AARange()) then
+			CastSpell(_W)
+		end
+		
+		if minion and _G.azBundle.MenuManager.menu.JungleClear.e and myHero:CanUseSpell(_E) == READY and 100 * minion.health / minion.maxHealth > 100 * myHero.health / myHero.maxHealth and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.JungleClear.wMana and ValidTarget(minion, _G.azBundle.ChampionData.SkillE.range) then
+			CastSpell(_E, minion)
+		end
+	end
+end
+
+function ChampIrelia:HarassMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	if (_G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.qMana) and ((_G.azBundle.MenuManager.menu.Harass.w and myHero:CanUseSpell(_W) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.wMana) or (_G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.eMana)) then
+		local dashToMinion = nil
+		local dashAwayMinion = nil
+		local enemyHarassTarget = nil
+		
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+				if dashToMinion == nil and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+					local eInRange = nil
+					for e, enemy in pairs(GetEnemyHeroes()) do
+						if enemy and ValidTarget(enemy) and GetDistance(enemy, minion) <= myHero.range + myHero.boundingRadius then
+							eInRange = enemy
+							print("Set E as " .. eInRange.charName)
+							break
+						end
+					end
+					
+					if eInRange then
+						dashToMinion = minion
+						print("set dash to minion")
+					end
+				end
+				
+				if dashToMinion and dashToMinion ~= minion and not dashAwayMinion and minion and GetDistance(minion, dashToMinion) <= _G.azBundle.ChampionData.SkillQ.range and GetDistance(minion, enemyHarassTarget) >= myHero.range + myHero.boundingRadius then
+					dashAwayMinion = minion
+					print("Set dash away minion")
+					print("TO: " .. dashToMinion.charName .. " -- AWAY: " .. dashAwayMinion.charName .. " -- E: " .. enemyHarassTarget.charName)
+					return
+				end
+			end
+		end
+		if dashToMinion and dashAwayMinion and enemyHarassTarget then
+			CastSpell(_Q, dashToMinion)
+			CastSpell(_W)
+			CastSpell(_E, enemyHarassTarget)
+			DelayAction(function()
+				myHero:Attack(enemyHarassTarget)
+			end, 0.1)
+			DelayAction(function()
+				CastSpell(_Q, dashToMinion)
+			end, 0.4)
+			return
+		end
+	end
+	
+	if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.qMana then
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+				CastSpell(_Q, minion)
+			end
+		end
+	end
+end
+
+function ChampIrelia:LastHitMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	if _G.azBundle.MenuManager.menu.LastHit.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.LastHit.qMana then
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+				CastSpell(_Q, minion)
+			end
+		end
+	end
+end
+
+function ChampIrelia:FleeMode()
+	if _G.azBundle.MenuManager.menu.Flee.q and myHero:CanUseSpell(_E) == READY then
+		for e, enemy in pairs(GetEnemyHeroes()) do
+			if enemy and ValidTarget(enemy, _G.azBundle.ChampionData.SkillE.range) and 100 * enemy.health / enemy.maxHealth > 100 * myHero.health / myHero.maxHealth then
+				CastSpell(_E, enemy)
+			end
+		end
+	end
+
+	if _G.azBundle.MenuManager.menu.Flee.q and myHero:CanUseSpell(_Q) == READY then
+		self.target.minion:update()
+		self.target.jungle:update()
+		
+		local furthestTarget = nil
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+				if furthestTarget then
+					if GetDistance(furthestTarget, mousePos) < GetDistance(myHero, mousePos) then
+						furthestTarget = minion
+					end
+				else
+					furthestTarget = minion
+				end
+			end
+		end
+		
+		for j, jungle in pairs(self.target.jungle.objects) do
+			if jungle and ValidTarget(jungle, _G.azBundle.ChampionData.SkillQ.range) then
+				if furthestTarget then
+					if GetDistance(furthestTarget, mousePos) < GetDistance(myHero, mousePos) then
+						furthestTarget = jungle
+					end
+				else
+					furthestTarget = jungle
+				end
+			end
+		end
+		
+		if furthestTarget then
+			CastSpell(_Q, furthestTarget)
+		end
+	else
+		myHero:MoveTo(mousePos.x, mousePos.z)
+	end
+end
+
+function ChampIrelia:AutoMode()
+	if _G.azBundle.MenuManager.menu.Auto.autoLHQ and myHero:CanUseSpell(_Q) == READY then
+		self.target.minion:update()
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+				CastSpell(_Q, minion)
+			end
+		end
+	end
+	
+	if _G.azBundle.MenuManager.menu.Auto.autoStunE and myHero:CanUseSpell(_E) == READY then
+		for e, enemy in pairs(GetEnemyHeroes()) do
+			if enemy and ValidTarget(enemy, _G.azBundle.ChampionData.SkillE.range) and 100 * enemy.health / enemy.maxHealth > 100 * myHero.health / myHero.maxHealth then
+				CastSpell(_E, enemy)
+			end
+		end
+	end
+end
+
+function ChampIrelia:Draw()
+	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.w and myHero:CanUseSpell(_W) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillW.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.wColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.e and myHero:CanUseSpell(_E) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillE.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.eColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.r and myHero:CanUseSpell(_R) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillR.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.rColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.e and myHero:CanUseSpell(_E) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillE.range, ARGB(255, 255, 255, 255))
+		for e, enemy in pairs(GetEnemyHeroes()) do
+			if enemy and ValidTarget(enemy, 800) and 100 * enemy.health / enemy.maxHealth > 100 * myHero.health / myHero.maxHealth then
+				DrawText3D("Can Stun Target [" .. 100 * enemy.health / enemy.maxHealth .. "%]", enemy.x - 80, enemy.y, enemy.z - 70, 14, ARGB(255, 255, 255, 255))
+			end
+		end
+	end
+end
+
+function ChampIrelia:OnDash(unit, spell)
+	
+end
+
+function ChampIrelia:OnInteruptable(unit, spell)
+	
+end
+
+function ChampIrelia:ProcessSpell(unit, spell)
+	
+end
+
+function ChampIrelia:ApplyBuff(source, unit, buff)
+
+end
+
+function ChampIrelia:RemoveBuff(source, unit, buff)
+
+end
+
+function ChampIrelia:SetupEvade()
+	_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
+end
+
+function ChampIrelia:GetDamage(target)
+	local myDmg = 0
+	if myHero:CanUseSpell(_Q) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillQ.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_W) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillW.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_E) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillE.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_R) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillR.Damage(myHero, target)
+	end
+	local sheenItem = _G.azBundle.ItemDmgManager:SheenItem()
+	if sheenItem then
+		if sheenItem == "S" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:Sheen(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:TriForce(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:LichBane(target)
+		end
+	end
+	return myDmg
+end
+--[[-----------------------------------------------------
+-------------------------/IRELIA-------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+-------------------------TALIYAH-------------------------
+-----------------------------------------------------]]--
+class("ChampTaliyah")
+function ChampTaliyah:__init()
+	_G.azBundle.PrintManager:General("Loaded.")
+	
+	self.ChampData = {
+		useAutoMode = true,
+		useFleeMode = true,
+		useInteruptable = true,
+		useProcessSpell = true,
+		useApplyBuff = false,
+		useRemoveBuff = false,
+		usePreTick = true,
+		useCreateObj = true,
+		useAntiDash = true
+	}
+	
+	self.target = MyTarget(950, 950, 950, DAMAGE_MAGIC)
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Combo Settings <<", "Combo")
+		_G.azBundle.MenuManager.menu.Combo:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("wMore", "Use W More Often", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Combo:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey(" "))
+		
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Harass Settings <<", "Harass")
+		_G.azBundle.MenuManager.menu.Harass:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("C"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Lane Clear Settings <<", "LaneClear")
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Jungle Clear Settings <<", "JungleClear")
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("key", "Jungle Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Last Hit Settings <<", "LastHit")
+		_G.azBundle.MenuManager.menu.LastHit:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Flee Settings <<", "Flee")
+		_G.azBundle.MenuManager.menu.Flee:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("key", "Flee Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("T"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Dash Settings <<", "Dash")
+		
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Auto Settings <<", "Auto")
+		_G.azBundle.MenuManager.menu.Auto:addParam("levelSequance", "Auto Level Sequance", SCRIPT_PARAM_LIST, 4, {
+			[1] = "Q-W-E-Max W-Max Q",
+			[2] = "E-W-Q-Max W-Max Q",
+			[3] = "W-Q-E-Max W-Max Q",
+			
+			[4] = "Q-W-E-Max Q-Max W",
+			[5] = "E-W-Q-Max Q-Max W",
+			[6] = "W-Q-E-Max Q-Max W",
+			
+			[7] = "Q-W-E-Max E-Max W",
+			[8] = "E-W-Q-Max E-Max W",
+			[9] = "W-Q-E-Max E-Max W",
+		})
+	
+	self.levelSequances = {
+		[1] = {1,2,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[2] = {3,1,2,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[3] = {2,1,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[4] = {1,2,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[5] = {3,2,1,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[6] = {2,1,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[7] = {1,2,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[8] = {3,2,1,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[9] = {2,1,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2}
+	}
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Draw Settings <<", "Draw")
+		_G.azBundle.MenuManager.menu.Draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("qColor", "Q Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("eColor", "E Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("wColor", "W Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("r", "Draw R Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("rColor", "R Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("targetColor", "Target Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
+	
+	--_G.azBundle.MenuManager.menu.Auto:permaShow("autoStunE")
+	
+	self.onWorkedGround = false
+	self.usedGround = {}
+	self.wTarget = nil
+end
+
+function ChampTaliyah:PreTick()
+	self.onWorkedGround = false
+	for i, worked in pairs(self.usedGround) do
+		if worked.expire <= os.clock() then
+			table.remove(self.usedGround, i)
+		else
+			if worked and worked.obje and worked.obje.pos and myHero:GetDistance(worked.obje) <= 425 then
+				self.onWorkedGround = true
+			end
+		end
+	end
+end
+
+function ChampTaliyah:AARange()
+	return myHero.range + myHero.boundingRadius
+end
+
+function ChampTaliyah:ComboMode()
+	self.target.champion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 910) then
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and not self.onWorkedGround then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and self.onWorkedGround then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
+				self.wTarget = CastPosition
+				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
+					CastSpell(_E, CastPosition.x, CastPosition.z)
+				end
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 3 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and 100*myHero.health/myHero.maxHealth <= 30 then
+			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
+				self.wTarget = CastPosition
+				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
+					CastSpell(_E, CastPosition.x, CastPosition.z)
+				end
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+	end
+end
+
+function ChampTaliyah:LaneClearMode()
+	self.target.minion:update()
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and ValidTarget(minion, _G.azBundle.ChampionData.SkillW.range) then
+				bestPos, bestHit = GetFarmPosition(550, 250, self.target.minion.objects)
+				if bestPos and bestHit and bestHit >= 3 then
+					CastSpell(_W, bestPos.x, bestPos.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and ValidTarget(minion, _G.azBundle.ChampionData.SkillE.range) then
+				bestPos, bestHit = GetFarmPosition(_G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.width, self.target.minion.objects)
+				if bestPos and bestHit and bestHit >= 3 then
+					CastSpell(_E, bestPos.x, bestPos.z)
+				end
+			end
+		end
+	end
+end
+
+function ChampTaliyah:JungleClearMode()
+	self.target.jungle:update()
+	
+	for m, minion in pairs(self.target.jungle.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and not self.onWorkedGround then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
+				local CastPosition, HitChance = VP:GetCircularAOECastPosition(minion, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
+					CastSpell(_W, CastPosition.x, CastPosition.z)
+					DelayAction(function()
+						CastSpell(_W, myHero.x, myHero.z)
+					end, 0.75)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
+				local CastPosition, HitChance = VP:GetCircularAOECastPosition(minion, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
+					CastSpell(_E, CastPosition.x, CastPosition.z)
+				end
+			end
+		end
+	end
+end
+
+function ChampTaliyah:HarassMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 910) then
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and not self.onWorkedGround then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and self.onWorkedGround then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
+				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
+					CastSpell(_E, CastPosition.x, CastPosition.z)
+				end
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+				DelayAction(function()
+					CastSpell(_W, myHero.x, myHero.z)
+				end, 0.75)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+	end
+end
+
+function ChampTaliyah:LastHitMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and not self.onWorkedGround then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
+				local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
+					CastSpell(_W, CastPosition.x, CastPosition.z)
+					DelayAction(function()
+						CastSpell(_W, myHero.x, myHero.z)
+					end, 0.75)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
+				local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
+					CastSpell(_E, CastPosition.x, CastPosition.z)
+				end
+			end
+		end
+	end
+end
+
+function ChampTaliyah:FleeMode()
+	
+end
+
+function ChampTaliyah:AutoMode()
+	
+end
+
+function ChampTaliyah:Draw()
+	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.w and myHero:CanUseSpell(_W) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillW.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.wColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.e and myHero:CanUseSpell(_E) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillE.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.eColor))
+	end
+	
+	if self.onWorkedGround then
+		DrawText3D("On Worked Ground", myHero.x - 100, myHero.y, myHero.z - 70, 18, ARGB(255, 255, 255, 255))
+	end
+end
+
+function ChampTaliyah:OnDash(unit, spell)
+	if unit and spell and spell.endPos then
+		if myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, spell.endPos.x, spell.endPos.z)
+		end
+		if myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+		end
+	end
+end
+
+function ChampTaliyah:OnInteruptable(unit, spell)
+	if unit and spell then
+		if myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, spell.endPos.x, spell.endPos.z)
+		end
+		if myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+		end
+	end
+end
+
+function ChampTaliyah:ProcessSpell(unit, spell)
+	if object == myHero and spell.name == "TaliyahW" and self.wTarget then
+		local teamInRange = 0
+		local enemyInRange = 0
+		local chosenTarget = nil
+		
+		for _, e in ipairs(GetEnemyHeroes()) do
+			if e and ValidTarget(e) and GetDistance(e.pos, self.wTarget) <= 125 then
+				enemyInRange = enemyInRange + 1
+				if chosenTarget == nil then
+					chosenTarget = e
+				elseif chosenTarget.health > e.health then
+					chosenTarget = e
+				end
+			end
+		end
+		
+		for _, a in ipairs(GetAllyHeroes()) do
+			if a and GetDistance(a) <= 250 then
+				teamInRange = teamInRange + 1
+			end
+		end
+		
+		if chosenTarget and enemyInRange > 0 then
+			if teamInRange >= enemyInRange then
+				DelayAction(function()
+					CastSpell(_W, myHero.x, myHero.z)
+					print("casting W2")
+				end, 0.75)
+			elseif 100*chosenTarget.health/chosenTarget.maxHealth < 25 then
+				DelayAction(function()
+					CastSpell(_W, myHero.x, myHero.z)
+					print("casting W2")
+				end, 0.75)
+			elseif teamInRange == 0 and enemyInRange == 1 and 100*chosenTarget.health/chosenTarget.maxHealth < 100*myHero.health/myHero.maxHealth then
+				DelayAction(function()
+					CastSpell(_W, myHero.x, myHero.z)
+					print("casting W2")
+				end, 0.75)
+			elseif teamInRange == 0 and enemyInRange == 1 and 100*chosenTarget.health/chosenTarget.maxHealth > 100*myHero.health/myHero.maxHealth then
+				DelayAction(function()
+					CastSpell(_W, chosenTarget.x, chosenTarget.z)
+					print("casting W2 away")
+				end, 0.75)
+			else
+				DelayAction(function()
+					CastSpell(_W, chosenTarget.x, chosenTarget.z)
+					print("casting W2 away")
+				end, 0.75)
+			end
+		end
+	end
+end
+
+function ChampTaliyah:ApplyBuff(source, unit, buff)
+
+end
+
+function ChampTaliyah:RemoveBuff(source, unit, buff)
+
+end
+
+function ChampTaliyah:CreateObj(obj)
+	if obj then
+		if obj.name:find("Taliyah_Base_Q") and not self:WorkedGroundIsKnown(obj) then
+			tmpT = {
+				obje = obj,
+				expire = os.clock() + 180
+			}
+			table.insert(self.usedGround, tmpT)
+		end
+	end
+end
+
+function ChampTaliyah:WorkedGroundIsKnown(obj)
+	for i, worked in pairs(self.usedGround) do
+		if worked and worked.obje then
+			if worked.obje == obj then
+				return true
 			end
 		else
-			print("<font color = \"#FFFFFF\">[Zer0 Bundle] </font><font color=\"#FF0000\">Error downloading remote information.</font>")
+			table.remove(self.usedGround, i)
 		end
 	end
-
-	_G.DataStore.ChampionL = ChampionLoader()
-
-	_G.ZeroConfig.menu = scriptConfig("Zer0 Bundle", "003data")
-
-	_G.ZeroConfig.menu:addParam("awareness", "Zer0 Awareness**", SCRIPT_PARAM_ONOFF, false)
-	_G.ZeroConfig.menu:addParam("activator", "Zer0 Activator**", SCRIPT_PARAM_ONOFF, false)
-	_G.ZeroConfig.menu:addParam("autoLevel", "Zer0 Auto-Level**", SCRIPT_PARAM_ONOFF, false)
-	_G.ZeroConfig.menu:addParam("misc", "Zer0 Misc**", SCRIPT_PARAM_ONOFF, false)
-
-	if _G.ZeroConfig.menu.awareness then
-		ZAware()
-	end
-
-	if _G.ZeroConfig.menu.activator then
-		Activator()
-	end
-
-	if _G.ZeroConfig.menu.misc then
-		Misc()
-	end
-
-	if _G.DataStore.ChampionL ~= nil and _G.DataStore.ChampionL:CanUseChamp() then
-		_G.ZeroConfig.menu:addParam(myHero.charName, "Zer0 " .. myHero.charName, SCRIPT_PARAM_ONOFF, false)
-		if _G.ZeroConfig.menu[myHero.charName] then
-			if not _G.UPLloaded then
-				if FileExist(LIB_PATH .. "/UPL.lua") then
-					require("UPL")
-					_G.UPL = UPL()
-					UPL:AddToMenu(_G.ZeroConfig.menu)
-					PrintPretty("UPL Loaded.", false, true)
-				else 
-					PrintPretty("Downloading UPL please do not press F9.", false, true)
-					DelayAction(function() DownloadFile("https://raw.github.com/nebelwolfi/BoL/master/Common/UPL.lua".."?rand="..math.random(1,10000), LIB_PATH.."UPL.lua", function () PrintPretty("Successfully downloaded UPL. Press F9 twice.", false, true) end) end, 3)
-					return
-				end
-			end
-
-			if not _G.UOLloaded then
-				if FileExist(LIB_PATH .. "/UOL.lua") then
-					require("UOL")
-					UOL:AddToMenu(scriptConfig("OrbWalker", "OrbWalker"))
-					PrintPretty("UOL Loaded.", false, true)
-				else 
-					PrintPretty("Downloading UOL please do not press F9.", false, true)
-					DelayAction(function() DownloadFile("https://raw.github.com/nebelwolfi/BoL/master/Common/UOL.lua".."?rand="..math.random(1,10000), LIB_PATH.."UOL.lua", function () PrintPretty("Successfully downloaded UOL. Press F9 twice.", false, true) end) end, 10)
-					return
-				end
-			end
-
-			PrintPretty("Loading Zer0 " .. myHero.charName, false, true)
-			_G.DataStore.Champion = _G.DataStore.ChampionL:GetChampO()
-			if _G.DataStore.Champion ~= nil then
-				PrintPretty("Loaded Zer0 " .. myHero.charName .. " [v" .. _G.DataStore.Champion.ver .. "]...", false, true)
-			end
-		end
-	end
-
-	_G.ZeroConfig.menu:addParam("spacer", "", SCRIPT_PARAM_INFO, "")
-	_G.ZeroConfig.menu:addParam("spacera", "If you enable a option please", SCRIPT_PARAM_INFO, "")
-	_G.ZeroConfig.menu:addParam("spacera", "double F9 to reload.", SCRIPT_PARAM_INFO, "")
-	_G.ZeroConfig.menu:addParam("spacerb", "** Means Beta", SCRIPT_PARAM_INFO, "")
-
-	PrintPretty("Zer0 Bundle Loaded....", false, true)
+	return false
 end
 
+function ChampTaliyah:SetupEvade()
+	--_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
+end
 
+function ChampTaliyah:GetDamage(target)
+	local myDmg = 0
+	if myHero:CanUseSpell(_Q) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillQ.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_W) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillW.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_E) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillE.Damage(myHero, target)
+	end
+	local sheenItem = _G.azBundle.ItemDmgManager:SheenItem()
+	if sheenItem then
+		if sheenItem == "S" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:Sheen(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:TriForce(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:LichBane(target)
+		end
+	end
+	return myDmg
+end
 
-function round(num, idp)
-  if idp and idp>0 then
-    local mult = 10^idp
-    return math.floor(num * mult + 0.5) / mult
-  end
-  return math.floor(num + 0.5)
+function ChampTaliyah:CastWTwo(target)
+	if target then
+		--CastSpell(_W, myHero.x, myHero.z)
+		
+	end
+end
+--[[-----------------------------------------------------
+-------------------------/TALIYAH------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+--------------------------RYZE---------------------------
+-----------------------------------------------------]]--
+class("ChampRyze")
+function ChampRyze:__init()
+	_G.azBundle.PrintManager:General("Loaded.")
+	
+	self.ChampData = {
+		useAutoMode = true,
+		useFleeMode = false,
+		useInteruptable = true,
+		useProcessSpell = false,
+		useApplyBuff = true,
+		useRemoveBuff = false,
+		usePreTick = false,
+		useCreateObj = true,
+		useAntiDash = true
+	}
+	
+	self.target = MyTarget(1000, 1000, 1000, DAMAGE_MAGIC)
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Combo Settings <<", "Combo")
+		_G.azBundle.MenuManager.menu.Combo:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey(" "))
+		
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Harass Settings <<", "Harass")
+		_G.azBundle.MenuManager.menu.Harass:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("C"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Lane Clear Settings <<", "LaneClear")
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Jungle Clear Settings <<", "JungleClear")
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("key", "Jungle Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Last Hit Settings <<", "LastHit")
+		_G.azBundle.MenuManager.menu.LastHit:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Flee Settings <<", "Flee")
+		_G.azBundle.MenuManager.menu.Flee:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("key", "Flee Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("T"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Auto Settings <<", "Auto")
+		_G.azBundle.MenuManager.menu.Auto:addParam("autoW", "Auto Root in Comfort Zone", SCRIPT_PARAM_ONKEYTOGGLE, false, GetKey("J"))
+		_G.azBundle.MenuManager.menu.Auto:addParam("levelSequance", "Auto Level Sequance", SCRIPT_PARAM_LIST, 10, {
+			[1] = "Q-W-E-Max W-Max Q",
+			[2] = "E-W-Q-Max W-Max Q",
+			[3] = "W-Q-E-Max W-Max Q",
+			
+			[4] = "Q-W-E-Max Q-Max W",
+			[5] = "E-W-Q-Max Q-Max W",
+			[6] = "W-Q-E-Max Q-Max W",
+			
+			[7] = "Q-W-E-Max E-Max W",
+			[8] = "E-W-Q-Max E-Max W",
+			[9] = "W-Q-E-Max E-Max W",
+			
+			[10] = "E-Q-W-Max Q-Max W",
+		})
+	
+	self.levelSequances = {
+		[1] = {1,2,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[2] = {3,1,2,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[3] = {2,1,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[4] = {1,2,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[5] = {3,2,1,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[6] = {2,1,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[7] = {1,2,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[8] = {3,2,1,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[9] = {2,1,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[10] = {3,1,2,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3}
+	}
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Draw Settings <<", "Draw")
+		_G.azBundle.MenuManager.menu.Draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("qColor", "Q Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("eColor", "E Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("wColor", "W Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("r", "Draw R Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("rColor", "R Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("targetColor", "Target Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
+	
+	_G.azBundle.MenuManager.menu.Auto:permaShow("autoW")
+	
+	self.runeCount = 0
+end
+
+function ChampRyze:PreTick()
+	
+end
+
+function ChampRyze:AARange()
+	return myHero.range + myHero.boundingRadius
+end
+
+function ChampRyze:ComboMode()
+	self.target.champion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 1000) then
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+		
+	end
+end
+
+function ChampRyze:LaneClearMode()
+	self.target.minion:update()
+	
+	local bestEBuff = nil
+	local bestEBuffCount = 0
+	
+	local bestQETarget = nil
+	local bestQETargetCount = 0
+	
+	local bestOtherTarget = nil
+	local bestOtherTargetCount = 0
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion then
+			
+			if bestEBuff and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillE.range*_G.azBundle.ChampionData.SkillE.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if HasBuff(minion, "RyzeE") and tmpCount > bestEBuffCount then
+					bestEBuff = minion
+					bestEBuffCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistanceSqr(minion, bestEBuff) <= 100*100 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 then
+					bestEBuff = minion
+					bestEBuffCount = tmpCount
+				end
+			end
+			
+			if bestQETarget and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestQETarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > bestQETargetCount and HitChance >= 2 then
+					bestQETarget = minion
+					bestQETargetCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestQETarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 and HitChance >= 2 then
+					bestQETarget = minion
+					bestQETargetCount = tmpCount
+				end
+			end
+			
+			if bestOtherTarget and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestOtherTarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > bestOtherTargetCount then
+					bestOtherTarget = minion
+					bestOtherTargetCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestOtherTarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 then
+					bestOtherTarget = minion
+					bestOtherTargetCount = tmpCount
+				end
+			end
+		end
+	end
+	
+	if bestEBuff and bestEBuffCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		return
+	end
+	
+	if bestQETarget and bestQETargetCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestQETarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestQETarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestQETarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			local CastPosition, HitChance = VP:GetLineCastPosition(bestQETarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		return
+	end
+
+	if bestOtherTarget and bestOtherTargetCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestOtherTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestOtherTarget)
+		end
+	end
+
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(bestEBuff, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+		end
+	end
+end
+
+function ChampRyze:JungleClearMode()
+	self.target.jungle:update()
+	
+	for m, minion in pairs(self.target.jungle.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+
+			if _G.azBundle.MenuManager.menu.JungleClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+				end
+			end
+		end
+	end
+end
+
+function ChampRyze:HarassMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 1000) then
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+			if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, myTarget)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, myTarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, myTarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
+			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			end
+		end
+		
+	end
+end
+
+function ChampRyze:LastHitMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
+				
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
+				
+			end
+		end
+	end
+end
+
+function ChampRyze:FleeMode()
+	
+end
+
+function ChampRyze:AutoMode()
+	
+end
+
+function ChampRyze:Draw()
+	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.w and myHero:CanUseSpell(_W) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillW.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.wColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.e and myHero:CanUseSpell(_E) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillE.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.eColor))
+	end
+end
+
+function ChampRyze:OnDash(unit, spell)
+	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
+		CastSpell(_E, unit)
+	end
+end
+
+function ChampRyze:OnInteruptable(unit, spell)
+	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
+		CastSpell(_E, unit)
+	end
+end
+
+function ChampRyze:ProcessSpell(unit, spell)
+	
+end
+
+function ChampRyze:ApplyBuff(source, unit, buff)
+	if source and unit and buff and source.isMe and unit.isMe then
+		if buff.name == "ryzeqiconnocharge" then
+			self.runeCount = 0
+		elseif buff.name == "ryzeqiconhalfcharge" then
+			self.runeCount = 1
+		elseif buff.name == "ryzeqiconfullcharge" then
+			self.runeCount = 2
+		end
+	end
+end
+
+function ChampRyze:RemoveBuff(source, unit, buff)
+
+end
+
+function ChampRyze:CreateObj(obj)
+	
+end
+
+function ChampRyze:SetupEvade()
+	--_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
+end
+
+function ChampRyze:GetDamage(target)
+	local myDmg = 0
+	if myHero:CanUseSpell(_Q) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillQ.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_W) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillW.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_E) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillE.Damage(myHero, target)
+	end
+	local sheenItem = _G.azBundle.ItemDmgManager:SheenItem()
+	if sheenItem then
+		if sheenItem == "S" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:Sheen(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:TriForce(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:LichBane(target)
+		end
+	end
+	return myDmg
+end
+--[[-----------------------------------------------------
+--------------------------/RYZE--------------------------
+-----------------------------------------------------]]--
+
+function OnLoad()
+	_G.azBundle.PrintManager:General("Welcome to AZer0 Bundle.")
+	
+	_G.azBundle.MenuManager = MenuManager(_G.azBundle.ChampionData.scriptName)
+	_G.azBundle.EvadeManager = EvadeManager()
+	_G.azBundle.Orbwalk = OrbwalkManager()
+	_G.azBundle.AwareManager = AwareManager()
+	_G.azBundle.MiscManager = MiscManager()
+	_G.azBundle.ItemDmgManager = ItemDmgManager()
+	
+	local champLoaded = false
+	if myHero.charName == "Irelia" then
+		_G.azBundle.Champion = ChampIrelia()
+		_G.azBundle.Champion:SetupEvade()
+		champLoaded = true
+	elseif myHero.charName == "Taliyah" then
+		_G.azBundle.Champion = ChampTaliyah()
+		_G.azBundle.Champion:SetupEvade()
+		champLoaded = true
+	elseif myHero.charName == "Ryze" then
+		_G.azBundle.Champion = ChampRyze()
+		_G.azBundle.Champion:SetupEvade()
+		champLoaded = true
+	else
+		_G.azBundle.PrintManager:General("There was a error loading your champion.")
+	end
+end
+
+function OnProcessSpell(unit, spell)
+	if _G.azBundle.Champion.ChampData.useInteruptable and unit and not unit.isMe and unit.team ~= myHero.team and spell and _G.azBundle.ChampionData:CanInterupt(spell) then
+		_G.azBundle.Champion:OnInteruptable(unit, spell)
+	end
+	
+	if _G.azBundle.Champion.ChampData.useInteruptable and unit and not unit.isMe and unit.team ~= myHero.team and spell and _G.azBundle.ChampionData:IsDash(spell) then
+		_G.azBundle.Champion:OnDash(unit, spell)
+	end
+	
+	if _G.azBundle.EvadeManager then
+		_G.azBundle.EvadeManager:DashHandler(unit, spell)
+	end
+end
+
+function OnApplyBuff(source, unit, buff)
+	if _G.azBundle.Champion.ChampData.useApplyBuff and source and unit and buff then
+		_G.azBundle.Champion:ApplyBuff(source, unit, buff)
+	end
+	
+	if _G.azBundle.ItemDmgManager and source and unit and buff then
+		_G.azBundle.ItemDmgManager:OnApplyBuff(source, unit, buff)
+	end
+end
+
+function OnRemoveBuff(unit, buff)
+	if _G.azBundle.Champion.ChampData.useRemoveBuff and unit and buff then
+		_G.azBundle.Champion:RemoveBuff(unit, buff)
+	end
+	
+	if _G.azBundle.ItemDmgManager and source and unit and buff then
+		_G.azBundle.ItemDmgManager:OnRemoveBuff(unit, buff)
+	end
+end
+
+function OnDeleteObj(object)
+	if _G.azBundle.EvadeManager then
+		_G.azBundle.EvadeManager:OnDeleteObj(object)
+	end
+end
+
+function OnDraw()
+	if _G.azBundle.EvadeManager then
+		_G.azBundle.EvadeManager:EvadeDraw()
+	end
+	
+	if _G.azBundle.AwareManager then
+		_G.azBundle.AwareManager:Draw()
+	end
+
+	if _G.azBundle.Champion then
+		_G.azBundle.Champion:Draw()
+	end
+	
+	if _G.azBundle.MenuManager and _G.azBundle.MenuManager.menu.Draw.target then
+		if _G.azBundle.Champion.target.champion.target and ValidTarget(_G.azBundle.Champion.target.champion.target, 1200) then
+			DrawCircle2(_G.azBundle.Champion.target.champion.target.x, _G.azBundle.Champion.target.champion.target.y, _G.azBundle.Champion.target.champion.target.z, 65, RGBColor(_G.azBundle.MenuManager.menu.Draw.targetColor))
+			DrawText3D(">> TARGET <<", _G.azBundle.Champion.target.champion.target.pos.x-100, _G.azBundle.Champion.target.champion.target.pos.y-50, _G.azBundle.Champion.target.champion.target.pos.z, 20, 0xFFFFFFFF)
+		end
+	end
+	
+	if _G.azBundle.MenuManager and _G.azBundle.MenuManager.menu.Draw.damage then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if enemy and enemy.visible and not enemy.dead then
+				local myDmg = _G.azBundle.Champion:GetDamage(enemy)
+				textLabel = nil
+				local line = 2
+				local linePosA  = {x = 0, y = 0 }
+				local linePosB  = {x = 0, y = 0 }
+				local TextPos   = {x = 0, y = 0 }
+				
+				local p = WorldToScreen(D3DXVECTOR3(enemy.x, enemy.y, enemy.z))
+				if OnScreen(p.x, p.y) then
+					if myDmg >= enemy.health then
+						myDmg = enemy.health - 1
+						textLabel = "Killable"
+					else
+						textLabel = "Damage"
+					end
+					myDmg = math.round(myDmg)
+					
+					local StartPos, EndPos = GetHPBarPos(enemy)
+					local Real_X = StartPos.x + 24
+					local Offs_X = (Real_X + ((enemy.health - myDmg) / enemy.maxHealth) * (EndPos.x - StartPos.x - 2))
+					if Offs_X < Real_X then Offs_X = Real_X end 
+					
+					local mytrans = 350 - math.round(255*((enemy.health-myDmg)/enemy.maxHealth))
+					if mytrans >= 255 then mytrans=254 end
+					local my_bluepart = math.round(400*((enemy.health-myDmg)/enemy.maxHealth))
+					if my_bluepart >= 255 then my_bluepart=254 end
+					
+					linePosA.x = Offs_X-150
+					linePosA.y = (StartPos.y-(30+(line*15)))    
+					linePosB.x = Offs_X-150
+					linePosB.y = (StartPos.y-10)
+					TextPos.x = Offs_X-148
+					TextPos.y = (StartPos.y-(30+(line*15)))
+					
+					DrawLine(linePosA.x, linePosA.y, linePosB.x, linePosB.y , 2, ARGB(mytrans, 255, my_bluepart, 0))
+					DrawText(tostring(myDmg).." "..tostring(textLabel), 15, TextPos.x, TextPos.y , ARGB(mytrans, 255, my_bluepart, 0))
+				end
+			end
+		end
+	end
+	
+end
+
+function OnTick()
+	if _G.azBundle.EvadeManager then
+		_G.azBundle.EvadeManager:AutoExpireEvades()
+		_G.azBundle.EvadeManager:EvadeTick()
+	end
+	
+	if _G.azBundle.AwareManager then
+		_G.azBundle.AwareManager:Tick()
+	end
+	
+	if _G.azBundle.MiscManager then
+		_G.azBundle.MiscManager:Tick()
+	end
+	
+	if _G.azBundle.Champion then
+		if _G.azBundle.MenuManager and _G.azBundle.Champion and _G.azBundle.MenuManager.menu.Auto.levelSequance  then
+			autoLevelSetSequence(_G.azBundle.Champion.levelSequances[_G.azBundle.MenuManager.menu.Auto.levelSequance])
+		end
+		
+		if _G.azBundle.MenuManager.menu.Flee.key then
+			_G.azBundle.Champion:FleeMode()
+		end
+		
+		if _G.azBundle.Champion.ChampData.usePreTick then
+			_G.azBundle.Champion:PreTick()
+		end
+		
+		local currentMode = _G.azBundle.Orbwalk.Mode()
+		if currentMode == "Combo" then
+			_G.azBundle.Champion:ComboMode()
+			return
+		end
+		if currentMode == "Harass" then
+			_G.azBundle.Champion:HarassMode()
+			return
+		end
+		if currentMode == "LaneClear" then
+			_G.azBundle.Champion:LaneClearMode()
+			_G.azBundle.Champion:JungleClearMode()
+			return
+		end
+		if currentMode == "LastHit" then
+			_G.azBundle.Champion:LastHitMode()
+			return
+		end
+	end
+	
+	if _G.azBundle.Champion and _G.azBundle.Champion.ChampData.useAutoMode then
+		_G.azBundle.Champion:AutoMode()
+	end
+end
+
+function OnCreateObj(obj)
+	if _G.azBundle.Champion and _G.azBundle.Champion.ChampData.useCreateObj then
+		_G.azBundle.Champion:CreateObj(obj)
+	end
 end
