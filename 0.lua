@@ -5,8 +5,8 @@ _G.zeroConfig = {
 }
 
 local UpdateHost = "raw.github.com"
-local UpdatePath = "/azer0/0BoL/master/Version/AZer0.Version?rand=" .. math.random(1, 10000)
-local UpdatePath2 = "/azer0/0BoL/master/AZer0.lua?rand=" .. math.random(1, 10000)
+local UpdatePath = "/azer0/0BoL/master/Version/0.Version?rand=" .. math.random(1, 10000)
+local UpdatePath2 = "/azer0/0BoL/master/0.lua?rand=" .. math.random(1, 10000)
 local UpdateFile = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
 local VersionURL = "http://"..UpdateHost..UpdatePath
 local UpdateURL = "http://"..UpdateHost..UpdatePath2
