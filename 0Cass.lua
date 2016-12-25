@@ -1,16 +1,25 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v23
+-Fixed a error in auto E
+-Tweaked last hit settings
+-Added menu option (in Advanced) to auto E champs
+-Added perma shows for auto E settings
+
 v22
 -Added HPred Support
 -Fixed a error in lane clear
 -Tweaked last hitting with E
 -Fixed some menu labels
 -Added Q/W/E/R range drawings
+
 v21
 -Fixed a error in the target selector
+
 v20
 -Added W to Lane Clear mode
+
 v19
 -Fixed VPred hit chance from hard coded versions
 -Added W to Harass Mode for target
@@ -27,7 +36,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 22
+	Version = 23
 }
 
 --[[
@@ -453,7 +462,11 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("emptySpace4", "", SCRIPT_PARAM_INFO, "")
 			
 			mainMenu.Advanced:addParam("autoE", "Auto Last Hit (E)", SCRIPT_PARAM_ONOFF, true)
+			mainMenu.Advanced:addParam("autoEC", "Auto E Champions", SCRIPT_PARAM_ONOFF, true)
 		
+			mainMenu.Advanced:permaShow("autoE")
+			mainMenu.Advanced:permaShow("autoEC")
+			
 		mainMenu:addSubMenu(">> Draw Settings <<", "Draw")
 			mainMenu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Draw:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
@@ -709,6 +722,21 @@ function OnTick()
 	if mainMenu.Combo.key then ComboTick() end
 	if mainMenu.Harass.key then HarassTick() end
 	--if mainMenu.
+	if mainMenu.Advanced.autoEC and myHero:CanUseSpell(_E) == READY then
+		local lowestHPInRange = nil
+		for i, object in pairs(GetEnemyHeroes()) do
+			if ValidTargetedT(object, MyChampData["E"].range) and GetDistance(object) <= MyChampData["E"].range then
+				if lowestHPInRange == nil then
+					lowestHPInRange = object
+				elseif lowestHPInRange and lowestHPInRange.health > object.health  then
+					lowestHPInRange = object
+				end
+			end
+		end
+		if lowestHPInRange then
+			CastSpell(_E, lowestHPInRange)
+		end
+	end
 	
 	if mainMenu.Advanced.autoE and myHero:CanUseSpell(_E) == READY then
 		--Auto E Minions
@@ -721,20 +749,6 @@ function OnTick()
 					CastSpell(_E, minion)
 					return
 				end
-			end
-			
-			local lowestHPInRange = nil
-			for i, object in pairs(GetEnemyHeroes()) do
-				if ValidTargetedT(object, MyChampData["E"].range) and GetDistance(object) <= MyChampData["E"].range then
-					if lowestHPInRange == nil then
-						lowestHPInRange = object
-					elseif lowestHPInRange and lowestHPInRange.health > object.health  then
-						lowestHPInRange = object
-					end
-				end
-			end
-			if lowestHPInRange then
-				CastSpell(_E, lowestHPInRange)
 			end
 		end
 	end
