@@ -2136,7 +2136,7 @@ function EvadeManager:EvadeTick()
 end
 
 function EvadeManager:DashHandler(unit,spell)
-	print("checking spell " .. spell.name)
+	--print("checking spell " .. spell.name)
 	if not self.isUsing then return end
 	local selectedDash = nil
 	if myHero.charName == "Irelia" then
@@ -2163,20 +2163,20 @@ function EvadeManager:DashHandler(unit,spell)
 		if self.ChampData[unit.charName] ~= nil and self.ChampData[unit.charName].SkillData[spell.name] ~= nil then
 			skillShotData = self.ChampData[unit.charName].SkillData[spell.name]
 		end
-		print("found data for " .. spell.name)
+		--print("found data for " .. spell.name)
 		if skillShotData and ((_G.Evadeee_Enabled and _G.Evadeee_Loaded and _G.Evadeee_impossibleToEvade) or not _G.Evadeee_Enabled) then --and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
 			self.evadeSkillShotQue[self.evadeCount] = skillShotData
 			self.evadeSkillShotObjectQue[self.evadeCount] = {name = skillShotData.spellname, startPos = Vector(spell.startPos), endPos = Vector(spell.endPos), when = os.clock()}
 			self.evadeCount = self.evadeCount + 1
-			print("1")
+			--print("1")
 			for i=1, heroManager.iCount do
-				print("2")
+				--print("2")
 				local allytarget = heroManager:GetHero(i)
 				if allytarget.isMe then
-					print("2")
+					--print("2")
 					local allyHitBox = allytarget.boundingRadius or 65
 					local whoWillGetHit = false
-					print("3")
+					--print("3")
 					if skillShotData.shotType == "Line" and single then
 						whoWillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
 					elseif skillShotData.shotType == "Line" then
@@ -2190,14 +2190,14 @@ function EvadeManager:DashHandler(unit,spell)
 					elseif skillShotData.shotType == "AdvLine" then
 						whoWillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
 					end
-					print("4")
+					--print("4")
 					if whoWillGetHit then
 						_G.azBundle.PrintManager:Evade("Detected [" .. allytarget.charName .. "] will get hit by [" .. spell.name .. "].")
 						if allytarget.isMe then
 							if skillShotData.canDash then -- and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
 								
 								if selectedDash.type == "target" and selectedDash.targetType == "enemy" and selectedDash.preferKill then
-									print("d1")
+									---print("d1")
 									local bestDashTarget = nil
 									for eI, enemyI in pairs(GetEnemyHeroes()) do
 										if enemyI and ValidTarget(enemyI, selectedDash.spellInfo.range) then -- and enemyI.health < selectedDash.spellInfo:Damage(myHero, enemyI) and not UnderTurret(enemyI.pos) then
