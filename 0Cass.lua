@@ -1,6 +1,11 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v24
+-Twaeked E slightly
+-Fixed a small logic error
+-Removed some print spam
+
 v23
 -Fixed a error in auto E
 -Tweaked last hit settings
@@ -36,7 +41,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 23
+	Version = 24
 }
 
 --[[
@@ -320,6 +325,7 @@ function RegisterPredictions()
 			GeneralPrint("Devine Prediction seems to be out of date, please update it if you plan on using it.")
 		end
 	end
+	--[[
 	if FileExist(LIB_PATH.."HPrediction.lua") then
 		hPredDetected = true
 		require 'HPrediction'
@@ -344,6 +350,7 @@ function RegisterPredictions()
 			GeneralPrint("There was a error using Fun House Prediction. If you are not using it disregard this.")
 		end
 	end
+	]]--
 end
 
 RegisterPredictions()
@@ -646,7 +653,7 @@ function getArrayLength(array)
 	local counter = 1
 	for i, element in pairs(array) do
 		counter = counter + 1
-		print("counted " .. counter)
+		--print("counted " .. counter)
 	end
 	return counter
 end
@@ -743,7 +750,7 @@ function OnTick()
 		if not mainMenu.Combo.key then
 			closeEnemyMinions:update()
 			for _, minion in pairs(closeEnemyMinions.objects) do
-				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range and minion.health < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) / 4) then
+				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range and minion.health < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) / 4.25) then
 				--local nT = 0.25 + 1900 / GetDistance(minion.visionPos, myHero.visionPos) + 0.1
 				--if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range and minion.health < VP:GetPredictedHealth(minion, 0.25) then
 					CastSpell(_E, minion)
