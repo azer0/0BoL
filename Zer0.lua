@@ -1,7 +1,15 @@
+--[[
+v6
+-Added FH Pred and HPred
+-Added *some* dash checks checks
+-Added new irelia harass
+-Misc other changes
+]]--
+
 _G.zeroConfig = {
 	UseUpdater = true,
 	AutoDownload = true,
-	Version = 5
+	Version = 7
 }
 
 local UpdateHost = "raw.github.com"
@@ -39,12 +47,17 @@ end
 local supportedChamps = {
 	["Irelia"] = true,
 	["Taliyah"] = true,
-	["Ryze"] = true
+	["Ryze"] = true,
+	["Heimerdinger"] = false,
+	["Lux"] = false
 }
 
 if not supportedChamps[myHero.charName] then
 	print("<font color=\"#FF794C\"><b>Zer0 Bundle</b></font> <font color=\"#FFDFBF\"><b>Champion [".. myHero.charName .."] not currently supported.</b></font>")
 	return
+else
+	print("<font color=\"#FF794C\"><b>Zer0 Bundle</b></font> <font color=\"#FFDFBF\"><b>Thank you for using AZer0 Scripts.</b></font>")
+	print("<font color=\"#FF794C\"><b>Zer0 Bundle</b></font> <font color=\"#FFDFBF\"><b>Visit our website at: http://40.76.208.14/</b></font>")
 end
 
 _G.azBundle = {
@@ -56,7 +69,8 @@ _G.azBundle = {
 	EvadeManager = nil,
 	AwareManager = nil,
 	MiscManager = nil,
-	ItemDmgManager = nil
+	ItemDmgManager = nil,
+	PredManager = nil
 }
 --[[-----------------------------------------------------
 -----------------------CHAMP DATA------------------------
@@ -67,6 +81,10 @@ function ChampionData:__init()
 	self.SkillW = {}
 	self.SkillE = {}
 	self.SkillR = {}
+	self.fhQ = nil
+	self.fhW = nil
+	self.fhE = nil
+	self.fhR = nil
 	
 	self.charName = nil
 	self.scriptName = nil
@@ -75,15 +93,24 @@ function ChampionData:__init()
 		self.SkillQ = {
 			range = 650,
 			delay = 0.25,
+			type = "target",
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
-				spellLevel = source:GetSpellData(_Q).level
+				if not source then
+					source = myHero
+				end
+				spellLevel = myHero:GetSpellData(_Q).level
 				levelDamage = {60,80,100,120,140}
-				myApScale = source.ap * 0.4
+				myApScale = myHero.ap * 0.4
 				damage = levelDamage[spellLevel] + myApScale
 				return damage
 			end
 		}
 		self.SkillW = {
+			type = "target",
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_W).level
 				levelDamage = {60,80,100,120,140}
@@ -95,6 +122,9 @@ function ChampionData:__init()
 		self.SkillE = {
 			range = 425,
 			delay = 0.25,
+			type = "target",
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_E).level
 				levelDamage = {40,52.5,65,77.5,90}
@@ -108,6 +138,10 @@ function ChampionData:__init()
 			delay = 80,
 			speed = 1600,
 			width = 25,
+			type = "line",
+			aoe = false,
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target) return (source:GetSpellData(_R).level * 40 + 40 + source.ap * 0.5 + source.addDamage * 0.6) * 3 end
 		}
 		
@@ -120,6 +154,10 @@ function ChampionData:__init()
 			delay = 0.2,
 			width = 130,
 			speed = 1200,
+			type = "line",
+			aoe = false,
+			colMinion = true,
+			colChamp = true,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_Q).level
 				levelDamage = {60,80,100,120,140}
@@ -133,6 +171,10 @@ function ChampionData:__init()
 			delay = 0.5,
 			width = 150,
 			speed = 1500,
+			type = "circle",
+			aoe = true,
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_W).level
 				levelDamage = {60,80,100,120,140}
@@ -146,6 +188,10 @@ function ChampionData:__init()
 			delay = math.huge,
 			width = 330,
 			speed = 800,
+			type = "circle",
+			aoe = true,
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_E).level
 				levelDamage = {40,52.5,65,77.5,90}
@@ -159,42 +205,65 @@ function ChampionData:__init()
 			Damage = function(source, target) return (source:GetSpellData(_R).level * 40 + 40 + source.ap * 0.5 + source.addDamage * 0.6) * 3 end
 		}
 		
+		self.fhW = {
+			range = 615,
+			speed = 1500,
+			radius = 75,
+			delay = 0.5,
+			collision = false,
+			aoe = true,
+			type = SkillshotCircle
+		}	
+		self.fhE = {
+			range = 570,
+			speed = 800,
+			radius = 165,
+			delay = 0.8,
+			collision = false,
+			aoe = true,
+			type = SkillshotCircle
+		}
+		
 		self.charName = "Taliyah"
 		self.scriptName = "Rock Candy"
+		
 	elseif myHero.charName == "Ryze" then
 		self.SkillQ = {
 			range = 1000,
 			delay = 0.25,
 			width = 55,
 			speed = 1700,
+			type = "line",
+			aoe = false,
+			colMinion = true,
+			colChamp = true,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_Q).level
-				levelDamage = {60,80,100,120,140}
-				myApScale = source.ap * 0.4
-				damage = levelDamage[spellLevel] + myApScale
-				return damage
+				return source:CalcMagicDamage(target, 60 + 25 * (spellLevel-1) + source.ap * 0.45 + source.maxMana * 0.03)
 			end
 		}
 		self.SkillW = {
 			range = 615,
 			delay = 0.25,
+			type = "target",
+			aoe = false,
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
 				spellLevel = source:GetSpellData(_W).level
-				levelDamage = {60,80,100,120,140}
-				myApScale = source.ap * 0.4
-				damage = levelDamage[spellLevel] + myApScale
-				return damage
+				return source:CalcMagicDamage(target, 80 + 20 * (spellLevel-1) + source.ap * 0.2 + source.maxMana * 0.01)
 			end
 		}
 		self.SkillE = {
 			range = 615,
 			delay = 0.25,
+			type = "target",
+			aoe = false,
+			colMinion = false,
+			colChamp = false,
 			Damage = function(source, target)
-				spellLevel = source:GetSpellData(_E).level
-				levelDamage = {40,52.5,65,77.5,90}
-				myApScale = source.ap * 0.2
-				damage = levelDamage[spellLevel] + myApScale
-				return damage
+				spellLevel = source:GetSpellData(_W).level
+				return source:CalcMagicDamage(target, 50 + 25 * (spellLevel-1) + source.ap * 0.3 + source.maxMana * 0.02)
 			end
 		}
 		self.SkillR = {
@@ -208,13 +277,73 @@ function ChampionData:__init()
 				end end,
 			Damage = function(source, target) return 0 end
 		}
-		
 		self.charName = "Ryze"
 		self.scriptName = "Overload"
+		
+	elseif myHero.charName == "Heimerdinger" then
+		self.SkillQ = {
+			range = 300,
+			type = "target",
+			aoe = false,
+			colMinion = false,
+			colChamp = false,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_Q).level
+				return source:CalcMagicDamage(target, 60 + 25 * (spellLevel-1) + source.ap * 0.45 + source.maxMana * 0.03)
+			end
+		}
+		self.SkillW = {
+			range = 1100,
+			width = 20,
+			speed = 3000,
+			delay = 0.5,
+			type = "line",
+			aoe = false,
+			colMinion = true,
+			colChamp = true,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				return source:CalcMagicDamage(target, 80 + 20 * (spellLevel-1) + source.ap * 0.2 + source.maxMana * 0.01)
+			end
+		}
+		self.SkillE = {
+			range = 925,
+			width = 135,
+			speed = 1200,
+			delay = 0.25,
+			type = "circle",
+			aoe = true,
+			colMinion = false,
+			colChamp = false,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				return source:CalcMagicDamage(target, 50 + 25 * (spellLevel-1) + source.ap * 0.3 + source.maxMana * 0.02)
+			end
+		}
+		self.SkillE2 = {
+			range = 925 + 500,
+			width = 250,
+			speed = 1200,
+			delay = 0.25,
+			type = "circle",
+			aoe = true,
+			colMinion = false,
+			colChamp = false,
+			Damage = function(source, target)
+				spellLevel = source:GetSpellData(_W).level
+				return source:CalcMagicDamage(target, 50 + 25 * (spellLevel-1) + source.ap * 0.3 + source.maxMana * 0.02)
+			end
+		}
+		self.SkillR = {
+			range = 0,
+			Damage = function(source, target) return 0 end
+		}
+		
+		self.charName = "Heimerdinger"
+		self.scriptName = "The Gates"
 	end
 	
-	self.InteruptSpellList = 
-	{
+	self.InteruptSpellList = {
 		["KatarinaR"] = true,
 		["AlZaharNetherGrasp"] = true,
 		["TwistedFateR"] = true,
@@ -315,6 +444,692 @@ end
 _G.azBundle.ChampionData = ChampionData()
 --[[-----------------------------------------------------
 -----------------------/CHAMP DATA-----------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+----------------------PREDICTION-------------------------
+-----------------------------------------------------]]--
+class("PredictionManager")
+function PredictionManager:__init()
+	--type = "line",
+	--aoe = false,
+	--colMinion = false,
+	--colChamp = false,
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Prediction Settings <<", "Prediction")
+		if self:NeedsPred(_G.azBundle.ChampionData.SkillQ.type) then
+			_G.azBundle.MenuManager.menu.Prediction:addSubMenu(">> Q Settings <<", "Q")
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("pred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+					[1] = "VPrediction",
+					[2] = "FH Prediction",
+					[3] = "HPrediction"
+				})
+				
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("vpredMinion", "V Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("vpredChamp", "V Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("fhPred", "FH Prediction", SCRIPT_PARAM_INFO, "Auto Mode")
+				
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("hpredMinion", "H Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.Q:addParam("hpredChamp", "H Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+		end
+		
+		if self:NeedsPred(_G.azBundle.ChampionData.SkillW.type) then
+			_G.azBundle.MenuManager.menu.Prediction:addSubMenu(">> W Settings <<", "W")
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("pred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+					[1] = "VPrediction",
+					[2] = "FH Prediction",
+					[3] = "HPrediction"
+				})
+				
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("vpredMinion", "V Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("vpredChamp", "V Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("fhPred", "FH Prediction", SCRIPT_PARAM_INFO, "Auto Mode")
+				
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("hpredMinion", "H Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.W:addParam("hpredChamp", "H Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+		end
+		
+		if self:NeedsPred(_G.azBundle.ChampionData.SkillE.type) then
+			_G.azBundle.MenuManager.menu.Prediction:addSubMenu(">> E Settings <<", "E")
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("pred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+					[1] = "VPrediction",
+					[2] = "FH Prediction",
+					[3] = "HPrediction"
+				})
+				
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("vpredMinion", "V Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("vpredChamp", "V Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("fhPred", "FH Prediction", SCRIPT_PARAM_INFO, "Auto Mode")
+				
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("hpredMinion", "H Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.E:addParam("hpredChamp", "H Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+		end
+		
+		if self:NeedsPred(_G.azBundle.ChampionData.SkillR.type) then
+			_G.azBundle.MenuManager.menu.Prediction:addSubMenu(">> R Settings <<", "R")
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("pred", "Prediction", SCRIPT_PARAM_LIST, 1, {
+					[1] = "VPrediction",
+					[2] = "FH Prediction",
+					[3] = "HPrediction"
+				})
+				
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("emptySpace1", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("vpredMinion", "V Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("vpredChamp", "V Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("emptySpace2", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("fhPred", "FH Prediction", SCRIPT_PARAM_INFO, "Auto Mode")
+				
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("emptySpace3", "", SCRIPT_PARAM_INFO, "")
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("hpredMinion", "H Pred Minion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+				_G.azBundle.MenuManager.menu.Prediction.R:addParam("hpredChamp", "H Pred Champion Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 5, 0)
+		end
+
+		_G.azBundle.MenuManager.menu.Prediction:addParam("healthPred", "Health Prediction", SCRIPT_PARAM_LIST, 2, {
+			[1] = "VPrediction",
+			[2] = "FH Prediction",
+			[3] = "None"
+		})
+		
+		_G.azBundle.MenuManager.menu.Prediction:addParam("locationPred", "Location Prediction", SCRIPT_PARAM_LIST, 1, {
+			[1] = "FH Prediction",
+			[2] = "None"
+		})
+		--local hpQ = HPSkillshot({type = "DelayLine", range = spell.range, speed = spell.speed, width = spell.width, delay = spell.delay, collisionM = spell.collision, collisionH = spell.collision})
+		--return HPSkillshot({type = "PromptLine", range = spell.range, width = spell.width, delay = spell.delay})
+		--return HPSkillshot({type = "DelayCircle", range = spell.range, speed = spell.speed, radius = .5*spell.width, delay = spell.delay})
+		--return HPSkillshot({type = "PromptCircle", range = spell.range, radius = .5*spell.width, delay = spell.delay})
+		
+		self.hpQ = nil
+		self.hpW = nil
+		self.hpE = nil
+		self.hpR = nil
+		
+		if not FHPrediction and FileExist(LIB_PATH .. "FHPrediction.lua") then require("FHPrediction") end
+end
+
+function PredictionManager:NeedsPred(spellType)
+	if spellType == "cone" or spellType == "circle" or spellType == "line" then
+		return true
+	end
+	return false
+end
+
+function PredictionManager:PredictHealth(target, when)
+	if VP and _G.azBundle.MenuManager.menu.Prediction.healthPred == 1 then
+		return VP:GetPredictedHealth(target, when)
+	elseif FH and _G.azBundle.MenuManager.menu.Prediction.healthPred == 2 then
+		return FHPrediction.PredictHealth(target, when)
+	elseif _G.azBundle.MenuManager.menu.Prediction.healthPred == 3 then
+		return target.health
+	elseif VP then
+		return VP:GetPredictedHealth(target, when)
+	else
+		return target.health
+	end
+end
+
+function PredictionManager:PredictPosition(target, when)
+	if FH and _G.azBundle.MenuManager.menu.Prediction.locationPred == 1 then
+		return FH:PredictPosition(target, when)
+	elseif _G.azBundle.MenuManager.menu.Prediction.locationPred == 2 then
+		return target.pos
+	else
+		return target.pos
+	end
+end
+
+function PredictionManager:IsDashing(target, spell)
+	if FH and _G.azBundle.MenuManager.menu.Prediction.locationPred == 1 then
+		local dashing, pos = FHPrediction.IsUnitDashing(ts.target, "Q")
+		if dashing and pos then
+			return pos
+		end
+	end
+	return false
+end
+
+function PredictionManager:CastQ(myT, isMinion, colision)
+	if not ValidTarget(myT) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.Q.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillQ.type == "line" then
+			if not _G.azBundle.ChampionData.SkillQ.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillQ.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillQ.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.Q.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhQ then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhQ, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("Q", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			CastSpell(_Q, pos.x, pos.z)
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.Q.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpQ and _G.azBundle.ChampionData.SkillQ.type == "line" then self.hpQ = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillQ.range, speed = _G.azBundle.ChampionData.SkillQ.speed, width = _G.azBundle.ChampionData.SkillQ.width, delay = _G.azBundle.ChampionData.SkillQ.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpQ, myT, myHero, _G.azBundle.ChampionData.SkillQ.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CastW(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillW.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.W.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillW.type == "line" then
+			if not _G.azBundle.ChampionData.SkillW.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillW.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillW.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.W.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhW then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhW, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("W", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillW.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			CastSpell(_W, pos.x, pos.z)
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.W.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpW and _G.azBundle.ChampionData.SkillW.type == "line" then self.hpW = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillW.range, speed = _G.azBundle.ChampionData.SkillW.speed, width = _G.azBundle.ChampionData.SkillW.width, delay = _G.azBundle.ChampionData.SkillW.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpW, myT, myHero, _G.azBundle.ChampionData.SkillW.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+				CastSpell(_W, CastPosition.x, CastPosition.z)
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CastE(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillE.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.E.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillE.type == "line" then
+			if not _G.azBundle.ChampionData.SkillE.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						CastSpell(_E, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						CastSpell(_E, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillE.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillE.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						CastSpell(_E, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						CastSpell(_E, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.E.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhE then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhE, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("E", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillE.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			CastSpell(_E, pos.x, pos.z)
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.E.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpE and _G.azBundle.ChampionData.SkillE.type == "line" then self.hpE = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillE.range, speed = _G.azBundle.ChampionData.SkillE.speed, width = _G.azBundle.ChampionData.SkillE.width, delay = _G.azBundle.ChampionData.SkillE.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpE, myT, myHero, _G.azBundle.ChampionData.SkillE.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+				CastSpell(_E, CastPosition.x, CastPosition.z)
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CastR(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillR.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.R.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillR.type == "line" then
+			if not _G.azBundle.ChampionData.SkillR.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						CastSpell(_R, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						CastSpell(_R, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillR.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillR.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						CastSpell(_R, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						CastSpell(_R, CastPosition.x, CastPosition.z)
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.R.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhR then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhR, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("R", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillR.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			CastSpell(_R, pos.x, pos.z)
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.R.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpR and _G.azBundle.ChampionData.SkillR.type == "line" then self.hpR = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillR.range, speed = _G.azBundle.ChampionData.SkillR.speed, width = _G.azBundle.ChampionData.SkillR.width, delay = _G.azBundle.ChampionData.SkillR.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpR, myT, myHero, _G.azBundle.ChampionData.SkillR.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+				CastSpell(_R, CastPosition.x, CastPosition.z)
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CheckQ(myT, isMinion, colision)
+	if not ValidTarget(myT) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.Q.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillQ.type == "line" then
+			if not _G.azBundle.ChampionData.SkillQ.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillQ.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillQ.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.Q.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhQ then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhQ, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("Q", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.Q.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpQ and _G.azBundle.ChampionData.SkillQ.type == "line" then self.hpQ = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillQ.range, speed = _G.azBundle.ChampionData.SkillQ.speed, width = _G.azBundle.ChampionData.SkillQ.width, delay = _G.azBundle.ChampionData.SkillQ.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpQ, myT, myHero, _G.azBundle.ChampionData.SkillQ.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.Q.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillQ.range ^ 2 then
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CheckW(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillW.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.W.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillW.type == "line" then
+			if not _G.azBundle.ChampionData.SkillW.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillW.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillW.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.W.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhW then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhW, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("W", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillW.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.W.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpW and _G.azBundle.ChampionData.SkillW.type == "line" then self.hpW = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillW.range, speed = _G.azBundle.ChampionData.SkillW.speed, width = _G.azBundle.ChampionData.SkillW.width, delay = _G.azBundle.ChampionData.SkillW.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpW, myT, myHero, _G.azBundle.ChampionData.SkillW.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.W.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillW.range ^ 2 then
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CheckE(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillE.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.E.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillE.type == "line" then
+			if not _G.azBundle.ChampionData.SkillE.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillE.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillE.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.E.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhE then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhE, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("E", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillE.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.E.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpE and _G.azBundle.ChampionData.SkillE.type == "line" then self.hpE = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillE.range, speed = _G.azBundle.ChampionData.SkillE.speed, width = _G.azBundle.ChampionData.SkillE.width, delay = _G.azBundle.ChampionData.SkillE.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpE, myT, myHero, _G.azBundle.ChampionData.SkillE.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.E.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillE.range ^ 2 then
+				return true
+			end
+		end
+	end
+end
+
+function PredictionManager:CheckR(myT, isMinion, colision)
+	if not ValidTarget(myT, _G.azBundle.ChampionData.SkillR.range + 50) then
+		return
+	end
+	if _G.azBundle.MenuManager.menu.Prediction.R.pred == 1 then
+		--VPred
+		if not VP then VP = VPrediction() end
+		if _G.azBundle.ChampionData.SkillR.type == "line" then
+			if not _G.azBundle.ChampionData.SkillR.aoe then
+				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetLineAOECastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						return true
+					end
+				end
+			end
+		elseif _G.azBundle.ChampionData.SkillR.type == "circle" then
+			if not _G.azBundle.ChampionData.SkillR.aoe then
+				local CastPosition, HitChance, Position = VP:GetCircularCastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero, colision)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						return true
+					end
+				end
+			else
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myT, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, _G.azBundle.ChampionData.SkillR.speed, myHero)
+				if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.vpredChamp)) then
+					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+						return true
+					end
+				end
+			end
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.R.pred == 2 then
+		local pos, hc, info = nil, nil, nil
+		if _G.azBundle.ChampionData.fhR then
+			pos, hc, info = FHPrediction.GetPrediction(_G.azBundle.ChampionData.fhR, myT)
+		else
+			pos, hc, info = FHPrediction.GetPrediction("R", myT)
+		end
+		if pos and hc and info and hc > 0 and GetDistanceSqr(pos) <= _G.azBundle.ChampionData.SkillR.range ^ 2 and ((colision and not info.collision) or (not colision)) then
+			return true
+		end
+	elseif _G.azBundle.MenuManager.menu.Prediction.R.pred == 3 then
+		if not HP then HP = HPrediction() end
+		if not self.hpR and _G.azBundle.ChampionData.SkillR.type == "line" then self.hpR = HPSkillshot({type = "DelayLine", range = _G.azBundle.ChampionData.SkillR.range, speed = _G.azBundle.ChampionData.SkillR.speed, width = _G.azBundle.ChampionData.SkillR.width, delay = _G.azBundle.ChampionData.SkillR.delay, collisionM = colision, collisionH = colision}) end
+		
+		local CastPosition, HitChance, Position = HP:GetPredict(self.hpR, myT, myHero, _G.azBundle.ChampionData.SkillR.colMinion)
+		if CastPosition and HitChance and ((isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.hpredMinion) or (not isMinion and HitChance >= _G.azBundle.MenuManager.menu.Prediction.R.hpredChamp)) then
+			if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
+				return true
+			end
+		end
+	end
+end
+--[[-----------------------------------------------------
+----------------------/PREDICTION------------------------
 -----------------------------------------------------]]--
 
 --[[-----------------------------------------------------
@@ -458,7 +1273,8 @@ end
 -----------------------------------------------------]]--
 local toDownload = {
 	["HPrediction"] = "https://raw.githubusercontent.com/BolHTTF/BoL/master/HTTF/Common/HPrediction.lua",
-	["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua"
+	["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua",
+	["FHPrediction"] = "http://api.funhouse.me/download-lua.php"
 }
 
 local isDownloading = false
@@ -490,6 +1306,7 @@ end
 if isDownloading then return end
 
 VP = VPrediction()
+HP = HPrediction()
 --[[-----------------------------------------------------
 --------------------/LIB DOWNLOAD------------------------
 -----------------------------------------------------]]--
@@ -575,6 +1392,104 @@ function DrawLine3D2(x1, y1, z1, x2, y2, z2, width, color)
     local c = WorldToScreen(D3DXVECTOR3(x2, y2, z2))
     local cx, cy = c.x, c.y
     DrawLine(cx, cy, px, py, width or 1, color or 4294967295)
+end
+
+function CountObjectsOnLineSegment(StartPos, EndPos, width, objects)
+    local n = 0
+    for i, object in ipairs(objects) do
+        local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(StartPos, EndPos, object)
+        if isOnSegment and GetDistanceSqr(pointSegment, object) < width * width then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+function IsManaLow(per)
+	if per == nil then return false end
+	return ((myHero.mana / myHero.maxMana * 100) <= per)
+end
+
+function GetWallData(sPos, ePos, limitCheck)
+	distance = GetDistance(sPos, ePos)
+	Boolean = false
+	fPos = 0
+	lPos = 0
+	for i = 0, distance, 10 do
+		tempPos = Extends(sPos, ePos, i)
+		if(IsWall(D3DXVECTOR3(tempPos.x, tempPos.y, tempPos.z)) and fPos == 0)then
+			fPos = tempPos
+		end
+		lPos = tempPos
+		if(not IsWall(D3DXVECTOR3(lPos.x, lPos.y, lPos.z)) and fPos ~= 0)then
+			if(i < limitCheck)then Boolean = true end
+			break
+		end
+	end
+	if(fPos ==0 ) then fPos = Vector(0, 0, 0) end
+	_r = {
+		fPos = fPos,
+		lPos = lPos,
+		IsOverWall = Boolean,
+		distance = GetDistance(fPos, lPos)
+	}
+	return _r
+end
+
+function GetWallPoint(startPos, endPos)
+	distance = GetDistance(startPos, endPos)
+	for i = 0, distance, 10 do
+		tempPos = Extends(startPos, endPos, i)
+		if(IsWall(D3DXVECTOR3(tempPos.x, tempPos.y, tempPos.z)))then
+			return Extends(tempPos, startPos, -35)
+		end
+	end
+end
+
+function IsOverWall(sPos, ePos)
+	distance = GetDistance(sPos, ePos)
+	fPos = 0
+	lPos = 0
+	for i = 0, distance, 10 do
+		tempPos = Extends(sPos, ePos, i)
+		if(IsWall(D3DXVECTOR3(tempPos.x, tempPos.y, tempPos.z)) and fPos == 0)then
+			fPos = tempPos
+		end
+		lPos = tempPos
+		if(not IsWall(D3DXVECTOR3(lPos.x, lPos.y, lPos.z)) and fPos ~= 0)then
+			return true
+		end
+	end
+	return false
+end
+
+function GetWallLength(sPos, ePos)
+	distance = GetDistance(sPos, ePos)
+	fPos = 0
+	lPos = 0
+	for i = 0, distance, 10 do
+		tempPos = Extends(sPos, ePos, i)
+		if(IsWall(D3DXVECTOR3(tempPos.x, tempPos.y, tempPos.z)) and fPos == 0)then
+			fPos = tempPos
+		end
+		lPos = tempPos
+		if(not IsWall(D3DXVECTOR3(lPos.x, lPos.y, lPos.z)) and fPos ~= 0)then
+			break
+		end
+	end
+	if(fPos ==0 ) then fPos = Vector(0, 0, 0) end
+	return GetDistance(fPos, lPos)
+end
+
+function GetFirstWallPoint(sPos, ePos)
+	distance = GetDistance(sPos, ePos)
+	for i = 0, distance, 10 do
+		tempPos = Extends(sPos, ePos, i)
+		if(IsWall(D3DXVECTOR3(tempPos.x, tempPos.y, tempPos.z)))then
+			return Extends(tempPos, sPos, -35)
+		end
+	end
+	return Vector(0, 0, 0)
 end
 --[[-----------------------------------------------------
 --------------------------/MATH--------------------------
@@ -678,7 +1593,7 @@ end
 -----------------------------------------------------]]--
 class("EvadeManager")
 function EvadeManager:__init()
-	self.dashSpells = {}
+	self.dashSpell = {}
 	
 	self.evadeSkillShotQue = {}
 	self.evadeSkillShotObjectQue = {}
@@ -689,7 +1604,9 @@ function EvadeManager:__init()
 	self.deltaTime = 0
 	self.hasShownEvadeMessage = false
 	
-	self.isUsing = false
+	if myHero.charName == "Irelia" then
+		self.isUsing = true
+	end
 	
 	self.ChampData = {
 		["Aatrox"] = {
@@ -1160,7 +2077,7 @@ end
 
 function EvadeManager:AddDashSpell(spell, spellFriendly, castType, info, target, prefKill)
 	if spell and castType and range and delay then
-		self.dashSpells[spellFriendly] = {
+		self.dashSpell = {
 			slot = spell,
 			pretty = spellFriendly,
 			type = castType,
@@ -1170,7 +2087,9 @@ function EvadeManager:AddDashSpell(spell, spellFriendly, castType, info, target,
 		}
 	end
 	
-	self.isUsing = true
+	_G.azBundle.PrintManager:General("Added dash spell [" .. spellFriendly .. "].")
+	
+	
 end
 
 function EvadeManager:OnDeleteObj(object)
@@ -1217,16 +2136,21 @@ function EvadeManager:EvadeTick()
 end
 
 function EvadeManager:DashHandler(unit,spell)
+	print("checking spell " .. spell.name)
 	if not self.isUsing then return end
 	local selectedDash = nil
-	for d, dashSpell in pairs(self.dashSpells) do
-		if dashSpell and myHero:CanUseSpell(dashSpell.slot) ~= READY then
-			selectedDash = dashSpell
-			print("Set dash as " .. dashSpell.pretty)
-		end
+	if myHero.charName == "Irelia" then
+		selectedDash = {
+			slot = _Q,
+			pretty = "Q",
+			type = "target",
+			spellInfo = _G.azBundle.ChampionData.SkillQ,
+			targetType = "enemy",
+			preferKill = true
+		}
+	else
+		return
 	end
-	
-	if selectedDash == nil then return end
 	
 	if (_G.DancingShoes_Loaded and _G.Evade) or (_G.AE and _G.AE_isEvading) then
 		if self.hasShownEvadeMessage == false then
@@ -1240,17 +2164,19 @@ function EvadeManager:DashHandler(unit,spell)
 			skillShotData = self.ChampData[unit.charName].SkillData[spell.name]
 		end
 		print("found data for " .. spell.name)
-		if skillShotData and ((_G.Evadeee_Enabled and _G.Evadeee_Loaded and _G.Evadeee_impossibleToEvade) or not _G.Evadeee_Enabled) and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
+		if skillShotData and ((_G.Evadeee_Enabled and _G.Evadeee_Loaded and _G.Evadeee_impossibleToEvade) or not _G.Evadeee_Enabled) then --and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
 			self.evadeSkillShotQue[self.evadeCount] = skillShotData
 			self.evadeSkillShotObjectQue[self.evadeCount] = {name = skillShotData.spellname, startPos = Vector(spell.startPos), endPos = Vector(spell.endPos), when = os.clock()}
 			self.evadeCount = self.evadeCount + 1
-			
+			print("1")
 			for i=1, heroManager.iCount do
+				print("2")
 				local allytarget = heroManager:GetHero(i)
-				if allytarget.isMe and allytarget.team == myHero.team and not allytarget.dead and allytarget.health > 0 then
+				if allytarget.isMe then
+					print("2")
 					local allyHitBox = allytarget.boundingRadius or 65
 					local whoWillGetHit = false
-					
+					print("3")
 					if skillShotData.shotType == "Line" and single then
 						whoWillGetHit = checkhitlinepoint(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
 					elseif skillShotData.shotType == "Line" then
@@ -1264,16 +2190,17 @@ function EvadeManager:DashHandler(unit,spell)
 					elseif skillShotData.shotType == "AdvLine" then
 						whoWillGetHit = checkhitlinepass(unit, spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox) or checkhitlinepass(unit, Vector(unit)*2-spell.endPos, skillShotData.radius, skillShotData.maxDistance, allytarget, allyHitBox)
 					end
-					
+					print("4")
 					if whoWillGetHit then
 						_G.azBundle.PrintManager:Evade("Detected [" .. allytarget.charName .. "] will get hit by [" .. spell.name .. "].")
 						if allytarget.isMe then
-							if skillShotData.canDash and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
+							if skillShotData.canDash then -- and mainMenu.Evade[unit.charName .. skillShotData.spellSlot].dash then
 								
 								if selectedDash.type == "target" and selectedDash.targetType == "enemy" and selectedDash.preferKill then
+									print("d1")
 									local bestDashTarget = nil
 									for eI, enemyI in pairs(GetEnemyHeroes()) do
-										if enemyI and ValidTarget(enemyI, selectedDash.spellInfo.range) and enemyI.health < selectedDash.spellInfo:Damage(myHero, enemyI) and not UnderTurret(enemyI.pos) then
+										if enemyI and ValidTarget(enemyI, selectedDash.spellInfo.range) then -- and enemyI.health < selectedDash.spellInfo:Damage(myHero, enemyI) and not UnderTurret(enemyI.pos) then
 											local stillGetHit = nil
 											if skillShotData.shotType == "Line" then
 												if single then
@@ -1351,7 +2278,7 @@ function EvadeManager:DashHandler(unit,spell)
 											end
 										end
 									end
-									if bestWallSpot then
+									if bestDashTarget then
 										CastSpell(selectedDash.slot, bestDashTarget)
 										_G.azBundle.PrintManager:Evade("Dashing to [" .. bestDashTarget.charName .. "] to avoid [" .. self.ChampData[unit.charName].Name .. " " .. skillShotData.spellSlot .. "].")
 										return
@@ -1391,7 +2318,6 @@ class("UnitChecks")
 function UnitChecks:__init()
 	
 end
-
 
 --[[-----------------------------------------------------
 ---------------------/UNIT CHECKS-----------------------
@@ -1999,12 +2925,7 @@ function ChampIrelia:ComboMode()
 		
 		if _G.azBundle.MenuManager.menu.Combo.r and myHero:CanUseSpell(_R) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range * 1.5 then
 			if 100 * myTarget.health / myTarget.maxHealth < 40 then
-				local CastPosition, HitChance, Position = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillR.delay, _G.azBundle.ChampionData.SkillR.width, _G.azBundle.ChampionData.SkillR.range, math.huge, myHero, false)
-				if HitChance >= 2 then
-					if GetDistanceSqr(CastPosition) <= _G.azBundle.ChampionData.SkillR.range ^ 2 then
-						CastSpell(_R, CastPosition.x, CastPosition.z)
-					end
-				end
+				_G.azBundle.PredManager:CastR(myTarget, false)
 			end
 		end
 		
@@ -2053,7 +2974,8 @@ end
 function ChampIrelia:HarassMode()
 	self.target.champion:update()
 	self.target.minion:update()
-	
+	self.target.jungle:update()
+	--[[
 	if (_G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.qMana) and ((_G.azBundle.MenuManager.menu.Harass.w and myHero:CanUseSpell(_W) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.wMana) or (_G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.eMana)) then
 		local dashToMinion = nil
 		local dashAwayMinion = nil
@@ -2098,7 +3020,104 @@ function ChampIrelia:HarassMode()
 			return
 		end
 	end
+	]]--
+	if (_G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.qMana) and ((_G.azBundle.MenuManager.menu.Harass.w and myHero:CanUseSpell(_W) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.wMana) or (_G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.eMana)) then
 	
+		local qKillable = {}
+		local qKI = 1
+		local qKillableInFive = {}
+		local qKIFI = 1
+		local extendedQRange = _G.azBundle.ChampionData.SkillQ.range + _G.azBundle.ChampionData.SkillQ.range / 2
+		
+		for m, minion in pairs(self.target.minion.objects) do
+			if minion and ValidTarget(minion, extendedQRange) then
+				if minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+					qKillable[qKI] = minion
+					qKI = qKI + 1
+				elseif _G.azBundle.PredManager:PredictHealth(minion, 0.5) < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+					qKillableInFive[qKIFI] = minion
+					qKIFI = qKIFI + 1
+				end
+			end
+		end
+		
+		for m, champ in pairs(self.target.champion.objects) do
+			if champ and ValidTarget(champ, extendedQRange) then
+				if champ.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, champ) then
+					qKillable[qKI] = champ
+					qKI = qKI + 1
+				elseif _G.azBundle.PredManager:PredictHealth(champ, 0.5) < _G.azBundle.ChampionData.SkillQ.Damage(myHero, champ) then
+					qKillableInFive[qKIFI] = champ
+					qKIFI = qKIFI + 1
+				end
+			end
+		end
+		
+		for m, jungle in pairs(self.target.jungle.objects) do
+			if jungle and ValidTarget(jungle, extendedQRange) then
+				if jungle.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, jungle) then
+					qKillable[qKI] = jungle
+					qKI = qKI + 1
+				elseif _G.azBundle.PredManager:PredictHealth(jungle, 0.5) < _G.azBundle.ChampionData.SkillQ.Damage(myHero, jungle) then
+					qKillableInFive[qKIFI] = jungle
+					qKIFI = qKIFI + 1
+				end
+			end
+		end
+		
+		local dashToTarget = nil
+		local dashAwayTarget = nil
+		local enemyHarassTarget = nil
+		
+		for i, killable in pairs(qKillable) do
+			if killable then
+				if dashToTarget == nil and enemyHarassTarget == nil and GetDistanceSqr(killable) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range then
+					for e, enemy in pairs(GetEnemyHeroes()) do
+						if enemy and ValidTarget(enemy) and GetDistanceSqr(killable, enemy) <= self:AARange() * self:AARange() then
+							enemyHarassTarget = enemy
+							dashToTarget = killable
+							break
+						end
+					end
+				end
+			end
+		end
+		
+		if dashToTarget and enemyHarassTarget then
+			for i, killable in pairs(qKillableInFive) do
+				if killable then
+					if dashAwayTarget == nil and GetDistanceSqr(killable, dashToTarget) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range and GetDistanceSqr(enemyHarassTarget, dashAwayTarget) > self:AARange() * self:AARange() then
+						dashAwayTarget = killable
+					end
+				end
+			end
+		end
+		
+		if dashToTarget and dashAwayTarget and enemyHarassTarget then
+			CastSpell(_Q, dashToTarget)
+			CastSpell(_W)
+			CastSpell(_E, enemyHarassTarget)
+			DelayAction(function()
+				myHero:Attack(enemyHarassTarget)
+			end, 0.1)
+			DelayAction(function()
+				CastSpell(_Q, dashAwayTarget)
+			end, 0.4)
+			return
+		end
+	
+	end
+
+	local myT = self.target.champion.target
+	
+	if myT and ValidTarget(myT, self:AARange()) then
+		CastSpell(_W)
+	end
+	
+	if myT and ValidTarget(myT, self:AARange()) and 100 * myHero.health / myHero.maxHealth < 100* myT.health / myT.maxHealth then
+		CastSpell(_E, myT)
+	end
+	--[[
 	if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and 100 * myHero.mana / myHero.maxMana > _G.azBundle.MenuManager.menu.Harass.qMana then
 		for m, minion in pairs(self.target.minion.objects) do
 			if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) and minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
@@ -2106,6 +3125,7 @@ function ChampIrelia:HarassMode()
 			end
 		end
 	end
+	]]--
 end
 
 function ChampIrelia:LastHitMode()
@@ -2187,6 +3207,13 @@ function ChampIrelia:AutoMode()
 end
 
 function ChampIrelia:Draw()
+	--minion.health < _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion)
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion and ValidTarget(minion, 2000) and minion.health <= _G.azBundle.ChampionData.SkillQ.Damage(myHero, minion) then
+			DrawCircle2(minion.x, minion.y, minion.z, 75, ARGB(255, 255, 255, 255))
+		end
+	end
+	
 	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
 		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
 	end
@@ -2234,7 +3261,7 @@ function ChampIrelia:RemoveBuff(source, unit, buff)
 end
 
 function ChampIrelia:SetupEvade()
-	_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
+	--_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
 end
 
 function ChampIrelia:GetDamage(target)
@@ -2272,7 +3299,8 @@ end
 -----------------------------------------------------]]--
 class("ChampTaliyah")
 function ChampTaliyah:__init()
-	_G.azBundle.PrintManager:General("Loaded.")
+	assert(load(Base64Decode("G0x1YVIAAQQEBAgAGZMNChoKAAAAAAAAAAAAAQQfAAAAAwAAAEQAAACGAEAA5QAAAJ1AAAGGQEAA5UAAAJ1AAAGlgAAACIAAgaXAAAAIgICBhgBBAOUAAQCdQAABhkBBAMGAAQCdQAABhoBBAOVAAQCKwICDhoBBAOWAAQCKwACEhoBBAOXAAQCKwICEhoBBAOUAAgCKwACFHwCAAAsAAAAEEgAAAEFkZFVubG9hZENhbGxiYWNrAAQUAAAAQWRkQnVnc3BsYXRDYWxsYmFjawAEDAAAAFRyYWNrZXJMb2FkAAQNAAAAQm9sVG9vbHNUaW1lAAQQAAAAQWRkVGlja0NhbGxiYWNrAAQGAAAAY2xhc3MABA4AAABTY3JpcHRUcmFja2VyAAQHAAAAX19pbml0AAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAoAAABzZW5kRGF0YXMABAsAAABHZXRXZWJQYWdlAAkAAAACAAAAAwAAAAAAAwkAAAAFAAAAGABAABcAAIAfAIAABQAAAAxAQACBgAAAHUCAAR8AgAADAAAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAcAAAB1bmxvYWQAAAAAAAEAAAABAQAAAAAAAAAAAAAAAAAAAAAEAAAABQAAAAAAAwkAAAAFAAAAGABAABcAAIAfAIAABQAAAAxAQACBgAAAHUCAAR8AgAADAAAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAkAAABidWdzcGxhdAAAAAAAAQAAAAEBAAAAAAAAAAAAAAAAAAAAAAUAAAAHAAAAAQAEDQAAAEYAwACAAAAAXYAAAUkAAABFAAAATEDAAMGAAABdQIABRsDAAKUAAADBAAEAXUCAAR8AgAAFAAAABA4AAABTY3JpcHRUcmFja2VyAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAUAAABsb2FkAAQMAAAARGVsYXlBY3Rpb24AAwAAAAAAQHpAAQAAAAYAAAAHAAAAAAADBQAAAAUAAAAMAEAAgUAAAB1AgAEfAIAAAgAAAAQSAAAAU2VuZFZhbHVlVG9TZXJ2ZXIABAgAAAB3b3JraW5nAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAEBAAAAAAAAAAAAAAAAAAAAAAAACAAAAA0AAAAAAAYyAAAABgBAAB2AgAAaQEAAF4AAgEGAAABfAAABF0AKgEYAQQBHQMEAgYABAMbAQQDHAMIBEEFCAN0AAAFdgAAACECAgUYAQQBHQMEAgYABAMbAQQDHAMIBEMFCAEbBQABPwcICDkEBAt0AAAFdgAAACEAAhUYAQQBHQMEAgYABAMbAQQDHAMIBBsFAAA9BQgIOAQEARoFCAE/BwgIOQQEC3QAAAV2AAAAIQACGRsBAAIFAAwDGgEIAAUEDAEYBQwBWQIEAXwAAAR8AgAAOAAAABA8AAABHZXRJbkdhbWVUaW1lcgADAAAAAAAAAAAECQAAADAwOjAwOjAwAAQGAAAAaG91cnMABAcAAABzdHJpbmcABAcAAABmb3JtYXQABAYAAAAlMDIuZgAEBQAAAG1hdGgABAYAAABmbG9vcgADAAAAAAAgrEAEBQAAAG1pbnMAAwAAAAAAAE5ABAUAAABzZWNzAAQCAAAAOgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAATAAAAAAAIKAAAAAEAAABGQEAAR4DAAIEAAAAhAAiABkFAAAzBQAKAAYABHYGAAVgAQQIXgAaAR0FBAhiAwQIXwAWAR8FBAhkAwAIXAAWARQGAAFtBAAAXQASARwFCAoZBQgCHAUIDGICBAheAAYBFAQABTIHCAsHBAgBdQYABQwGAAEkBgAAXQAGARQEAAUyBwgLBAQMAXUGAAUMBgABJAYAAIED3fx8AgAANAAAAAwAAAAAAAPA/BAsAAABvYmpNYW5hZ2VyAAQLAAAAbWF4T2JqZWN0cwAECgAAAGdldE9iamVjdAAABAUAAAB0eXBlAAQHAAAAb2JqX0hRAAQHAAAAaGVhbHRoAAQFAAAAdGVhbQAEBwAAAG15SGVybwAEEgAAAFNlbmRWYWx1ZVRvU2VydmVyAAQGAAAAbG9vc2UABAQAAAB3aW4AAAAAAAMAAAAAAAEAAQEAAAAAAAAAAAAAAAAAAAAAFAAAABQAAAACAAICAAAACkAAgB8AgAABAAAABAoAAABzY3JpcHRLZXkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAAABUAAAACAAUKAAAAhgBAAMAAgACdgAABGEBAARfAAICFAIAAjIBAAQABgACdQIABHwCAAAMAAAAEBQAAAHR5cGUABAcAAABzdHJpbmcABAoAAABzZW5kRGF0YXMAAAAAAAIAAAAAAAEBAAAAAAAAAAAAAAAAAAAAABYAAAAlAAAAAgATPwAAAApAAICGgEAAnYCAAAqAgICGAEEAxkBBAAaBQQAHwUECQQECAB2BAAFGgUEAR8HBAoFBAgBdgQABhoFBAIfBQQPBgQIAnYEAAcaBQQDHwcEDAcICAN2BAAEGgkEAB8JBBEECAwAdggABFgECAt0AAAGdgAAACoCAgYaAQwCdgIAACoCAhgoAxIeGQEQAmwAAABdAAIAKgMSHFwAAgArAxIeGQEUAh4BFAQqAAIqFAIAAjMBFAQEBBgBBQQYAh4FGAMHBBgAAAoAAQQIHAIcCRQDBQgcAB0NAAEGDBwCHw0AAwcMHAAdEQwBBBAgAh8RDAFaBhAKdQAACHwCAACEAAAAEBwAAAGFjdGlvbgAECQAAAHVzZXJuYW1lAAQIAAAAR2V0VXNlcgAEBQAAAGh3aWQABA0AAABCYXNlNjRFbmNvZGUABAkAAAB0b3N0cmluZwAEAwAAAG9zAAQHAAAAZ2V0ZW52AAQVAAAAUFJPQ0VTU09SX0lERU5USUZJRVIABAkAAABVU0VSTkFNRQAEDQAAAENPTVBVVEVSTkFNRQAEEAAAAFBST0NFU1NPUl9MRVZFTAAEEwAAAFBST0NFU1NPUl9SRVZJU0lPTgAECwAAAGluZ2FtZVRpbWUABA0AAABCb2xUb29sc1RpbWUABAYAAABpc1ZpcAAEAQAAAAAECQAAAFZJUF9VU0VSAAMAAAAAAADwPwMAAAAAAAAAAAQJAAAAY2hhbXBpb24ABAcAAABteUhlcm8ABAkAAABjaGFyTmFtZQAECwAAAEdldFdlYlBhZ2UABA4AAABib2wtdG9vbHMuY29tAAQXAAAAL2FwaS9ldmVudHM/c2NyaXB0S2V5PQAECgAAAHNjcmlwdEtleQAECQAAACZhY3Rpb249AAQLAAAAJmNoYW1waW9uPQAEDgAAACZib2xVc2VybmFtZT0ABAcAAAAmaHdpZD0ABA0AAAAmaW5nYW1lVGltZT0ABAgAAAAmaXNWaXA9AAAAAAACAAAAAAABAQAAAAAAAAAAAAAAAAAAAAAmAAAAKgAAAAMACiEAAADGQEAAAYEAAN2AAAHHwMAB3YCAAArAAIDHAEAAzADBAUABgACBQQEA3UAAAscAQADMgMEBQcEBAIABAAHBAQIAAAKAAEFCAgBWQYIC3UCAAccAQADMgMIBQcECAIEBAwDdQAACxwBAAMyAwgFBQQMAgYEDAN1AAAIKAMSHCgDEiB8AgAASAAAABAcAAABTb2NrZXQABAgAAAByZXF1aXJlAAQHAAAAc29ja2V0AAQEAAAAdGNwAAQIAAAAY29ubmVjdAADAAAAAAAAVEAEBQAAAHNlbmQABAUAAABHRVQgAAQSAAAAIEhUVFAvMS4wDQpIb3N0OiAABAUAAAANCg0KAAQLAAAAc2V0dGltZW91dAADAAAAAAAAAAAEAgAAAGIAAwAAAPyD15dBBAIAAAB0AAQKAAAATGFzdFByaW50AAQBAAAAAAQFAAAARmlsZQAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAA="), nil, "bt", _ENV))()
+	TrackerLoad("40RMmbgW5zhYM1As")
 	
 	self.ChampData = {
 		useAutoMode = true,
@@ -2385,6 +3413,8 @@ function ChampTaliyah:__init()
 	self.onWorkedGround = false
 	self.usedGround = {}
 	self.wTarget = nil
+	
+	_G.azBundle.PrintManager:General("Loaded.")
 end
 
 function ChampTaliyah:PreTick()
@@ -2407,52 +3437,51 @@ end
 function ChampTaliyah:ComboMode()
 	self.target.champion:update()
 	
+	local castOnTarget = false
+	
 	local myTarget = self.target.champion.target
 	if myTarget and ValidTarget(myTarget, 910) then
-		
 		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and not self.onWorkedGround then
-			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
+			_G.azBundle.PredManager:CastQ(myTarget, false, true)
+			castOnTarget = true
 		end
-		
 		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and self.onWorkedGround then
-			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
+			_G.azBundle.PredManager:CastQ(myTarget, false, true)
+			castOnTarget = true
 		end
-		
-		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
-			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
-				self.wTarget = CastPosition
-				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
-					CastSpell(_E, CastPosition.x, CastPosition.z)
-				end
-				CastSpell(_W, CastPosition.x, CastPosition.z)
-			end
+		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range and _G.azBundle.PredManager:CheckE(myTarget, false, false) and _G.azBundle.PredManager:checkW(myTarget, false, false) then
+			_G.azBundle.PredManager:CastE(en, false, false)
+			_G.azBundle.PredManager:CastW(en, false, false)
+			castOnTarget = true
 		end
-		
 		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
-			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
-			if CastPosition and HitChance and HitChance >= 3 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
-				CastSpell(_E, CastPosition.x, CastPosition.z)
+			_G.azBundle.PredManager:CastE(myTarget, false, false)
+			castOnTarget = true
+		end
+		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and 100*myHero.health/myHero.maxHealth <= 30 and _G.azBundle.MenuManager.menu.Combo.wMore then
+			_G.azBundle.PredManager:CastW(myTarget, false, false)
+			castOnTarget = true
+		end
+	end
+	
+	if castOnTarget then return end
+	
+	for _, en in pairs(GetEnemyHeroes()) do
+		if en and ValidTarget(en, 910) then
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(en) <= _G.azBundle.ChampionData.SkillQ.range and not self.onWorkedGround then
+				_G.azBundle.PredManager:CastQ(en, false, true)
+			end
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(en) <= _G.azBundle.ChampionData.SkillQ.range and self.onWorkedGround then
+				_G.azBundle.PredManager:CastQ(en, false, true)
+			end
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(en) <= _G.azBundle.ChampionData.SkillW.range and GetDistance(en) <= _G.azBundle.ChampionData.SkillE.range and _G.azBundle.PredManager:CheckE(en, false, false) and _G.azBundle.PredManager:checkW(en, false, false) then
+				_G.azBundle.PredManager:CastE(en, false, false)
+				_G.azBundle.PredManager:CastW(en, false, false)
+			end
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(en) <= _G.azBundle.ChampionData.SkillE.range then
+				_G.azBundle.PredManager:CastE(en, false, false)
 			end
 		end
-		
-		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range and 100*myHero.health/myHero.maxHealth <= 30 then
-			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
-				self.wTarget = CastPosition
-				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
-					CastSpell(_E, CastPosition.x, CastPosition.z)
-				end
-				CastSpell(_W, CastPosition.x, CastPosition.z)
-			end
-		end
-		
 	end
 end
 
@@ -2462,10 +3491,7 @@ function ChampTaliyah:LaneClearMode()
 	for m, minion in pairs(self.target.minion.objects) do
 		if minion then
 			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
-				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastQ(minion, true, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and ValidTarget(minion, _G.azBundle.ChampionData.SkillW.range) then
@@ -2491,34 +3517,19 @@ function ChampTaliyah:JungleClearMode()
 	for m, minion in pairs(self.target.jungle.objects) do
 		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
 			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround then
-				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastQ(minion, true, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and not self.onWorkedGround then
-				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastQ(minion, true, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
-				local CastPosition, HitChance = VP:GetCircularAOECastPosition(minion, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
-					CastSpell(_W, CastPosition.x, CastPosition.z)
-					DelayAction(function()
-						CastSpell(_W, myHero.x, myHero.z)
-					end, 0.75)
-				end
+				_G.azBundle.PredManager:CastW(minion, true, false)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
-				local CastPosition, HitChance = VP:GetCircularAOECastPosition(minion, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
-					CastSpell(_E, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastE(minion, true, false)
 			end
 		end
 	end
@@ -2532,37 +3543,22 @@ function ChampTaliyah:HarassMode()
 	if myTarget and ValidTarget(myTarget, 910) then
 		
 		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and not self.onWorkedGround then
-			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
+			_G.azBundle.PredManager:CastQ(myTarget, false, true)
 		end
 		
 		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range and self.onWorkedGround then
-			local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
+			_G.azBundle.PredManager:CastQ(myTarget, false, true)
 		end
 		
 		if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
-			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
-				if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
-					CastSpell(_E, CastPosition.x, CastPosition.z)
-				end
-				CastSpell(_W, CastPosition.x, CastPosition.z)
-				DelayAction(function()
-					CastSpell(_W, myHero.x, myHero.z)
-				end, 0.75)
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(CastPosition) <= _G.azBundle.ChampionData.SkillE.range then
+				_G.azBundle.PredManager:CastE(myTarget, false, false)
 			end
+			_G.azBundle.PredManager:CastW(myTarget, false, false)
 		end
 		
 		if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
-			local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
-			if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
-				CastSpell(_E, CastPosition.x, CastPosition.z)
-			end
+			_G.azBundle.PredManager:CastE(myTarget, false, false)
 		end
 		
 	end
@@ -2575,34 +3571,19 @@ function ChampTaliyah:LastHitMode()
 	for m, minion in pairs(self.target.minion.objects) do
 		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
 			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and self.onWorkedGround then
-				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastQ(minion, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY and not self.onWorkedGround then
-				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastQ(minion, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
-				local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillW.delay, _G.azBundle.ChampionData.SkillW.width, _G.azBundle.ChampionData.SkillW.range, _G.azBundle.ChampionData.SkillW.speed, myHero, false)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillW.range then
-					CastSpell(_W, CastPosition.x, CastPosition.z)
-					DelayAction(function()
-						CastSpell(_W, myHero.x, myHero.z)
-					end, 0.75)
-				end
+				_G.azBundle.PredManager:CastW(minion, true)
 			end
 			
 			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
-				local CastPosition, HitChance = VP:GetCircularAOECastPosition(myTarget, _G.azBundle.ChampionData.SkillE.delay, _G.azBundle.ChampionData.SkillE.width, _G.azBundle.ChampionData.SkillE.range, _G.azBundle.ChampionData.SkillE.speed, myHero, false)
-				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillE.range then
-					CastSpell(_E, CastPosition.x, CastPosition.z)
-				end
+				_G.azBundle.PredManager:CastE(minion, true)
 			end
 		end
 	end
@@ -2636,10 +3617,10 @@ end
 
 function ChampTaliyah:OnDash(unit, spell)
 	if unit and spell and spell.endPos then
-		if myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+		if myHero:CanUseSpell(_E) == READY and GetDistance(spell.endPos) <= _G.azBundle.ChampionData.SkillE.range then
 			CastSpell(_E, spell.endPos.x, spell.endPos.z)
 		end
-		if myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+		if myHero:CanUseSpell(_W) == READY and GetDistance(spell.endPos) <= _G.azBundle.ChampionData.SkillW.range then
 			CastSpell(_W, spell.endPos.x, spell.endPos.z)
 		end
 	end
@@ -2801,7 +3782,7 @@ function ChampRyze:__init()
 	}
 	
 	self.target = MyTarget(1000, 1000, 1000, DAMAGE_MAGIC)
-	
+		
 	_G.azBundle.MenuManager.menu:addSubMenu(">> Combo Settings <<", "Combo")
 		_G.azBundle.MenuManager.menu.Combo:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
 		_G.azBundle.MenuManager.menu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
@@ -2914,6 +3895,549 @@ function ChampRyze:ComboMode()
 	if myTarget and ValidTarget(myTarget, 1000) then
 		
 		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(myTarget, false)
+			end
+
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(myTarget, false)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(myTarget, false)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, myTarget)
+			end
+			
+			if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(myTarget, false)
+			end
+		
+	end
+end
+
+function ChampRyze:LaneClearMode()
+	self.target.minion:update()
+	
+	local bestEBuff = nil
+	local bestEBuffCount = 0
+	
+	local bestQETarget = nil
+	local bestQETargetCount = 0
+	
+	local bestOtherTarget = nil
+	local bestOtherTargetCount = 0
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion then
+			
+			if bestEBuff and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillE.range*_G.azBundle.ChampionData.SkillE.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if HasBuff(minion, "RyzeE") and tmpCount > bestEBuffCount then
+					bestEBuff = minion
+					bestEBuffCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistanceSqr(minion, bestEBuff) <= 100*100 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 then
+					bestEBuff = minion
+					bestEBuffCount = tmpCount
+				end
+			end
+			
+			if bestQETarget and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestQETarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > bestQETargetCount and HitChance >= 2 then
+					bestQETarget = minion
+					bestQETargetCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestQETarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				local CastPosition, HitChance = VP:GetLineCastPosition(minion, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, true)
+				if HasBuff(minion, "RyzeE") and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 and HitChance >= 2 then
+					bestQETarget = minion
+					bestQETargetCount = tmpCount
+				end
+			end
+			
+			if bestOtherTarget and GetDistanceSqr(minion) <= _G.azBundle.ChampionData.SkillQ.range*_G.azBundle.ChampionData.SkillQ.range then
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestOtherTarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > bestOtherTargetCount then
+					bestOtherTarget = minion
+					bestOtherTargetCount = tmpCount
+				end
+			else
+				local tmpCount = 0
+				for m, minion in pairs(self.target.minion.objects) do
+					if minion and ValidTarget(minion) and GetDistance(minion, bestOtherTarget) <= 250 then
+						tmpCount = tmpCount + 1
+					end
+				end
+				if GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range and tmpCount > 0 then
+					bestOtherTarget = minion
+					bestOtherTargetCount = tmpCount
+				end
+			end
+		end
+	end
+	
+	if bestEBuff and bestEBuffCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestEBuff, true)
+		end
+
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestEBuff, true)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestEBuff, true)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestEBuff)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestEBuff, true)
+		end
+		return
+	end
+	
+	if bestQETarget and bestQETargetCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestQETarget, true)
+		end
+
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestQETarget, true)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillW.range then
+			CastSpell(_W, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestQETarget, true)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestQETarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestQETarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+			_G.azBundle.PredManager:CastQ(bestQETarget, true)
+		end
+		return
+	end
+
+	if bestOtherTarget and bestOtherTargetCount > 0 then
+		if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestOtherTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, bestOtherTarget)
+		end
+	end
+
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(bestEBuff) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, bestEBuff)
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+		end
+	end
+end
+
+function ChampRyze:JungleClearMode()
+	self.target.jungle:update()
+	
+	for m, minion in pairs(self.target.jungle.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+
+			if _G.azBundle.MenuManager.menu.JungleClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.w and myHero:CanUseSpell(_W) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.e and myHero:CanUseSpell(_E) == READY and GetDistance(minion) <= _G.azBundle.ChampionData.SkillE.range then
+				CastSpell(_E, minion)
+			end
+			
+			if _G.azBundle.MenuManager.menu.JungleClear.q and myHero:CanUseSpell(_Q) == READY then
+				_G.azBundle.PredManager:CastQ(minion, true)
+			end
+		end
+	end
+end
+
+function ChampRyze:HarassMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 1000) then
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			_G.azBundle.PredManager:CastQ(myTarget, false)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+			if _G.azBundle.MenuManager.menu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillW.range then
+				CastSpell(_W, myTarget)
+			end
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			_G.azBundle.PredManager:CastQ(myTarget, false)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, myTarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			_G.azBundle.PredManager:CastQ(myTarget, false)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.e and myHero:CanUseSpell(_E) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillE.range then
+			CastSpell(_E, myTarget)
+		end
+		
+		if _G.azBundle.MenuManager.menu.Harass.q and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= _G.azBundle.ChampionData.SkillQ.range then
+			_G.azBundle.PredManager:CastQ(myTarget, false)
+		end
+		
+	end
+end
+
+function ChampRyze:LastHitMode()
+	self.target.champion:update()
+	self.target.minion:update()
+	
+	for m, minion in pairs(self.target.minion.objects) do
+		if minion and ValidTarget(minion, _G.azBundle.ChampionData.SkillQ.range) then
+			if _G.azBundle.MenuManager.menu.LaneClear.q and myHero:CanUseSpell(_Q) == READY then
+				
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.w and myHero:CanUseSpell(_W) == READY then
+				
+			end
+			
+			if _G.azBundle.MenuManager.menu.LaneClear.e and myHero:CanUseSpell(_E) == READY then
+				
+			end
+		end
+	end
+end
+
+function ChampRyze:FleeMode()
+	
+end
+
+function ChampRyze:AutoMode()
+	
+end
+
+function ChampRyze:Draw()
+	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.w and myHero:CanUseSpell(_W) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillW.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.wColor))
+	end
+	
+	if _G.azBundle.MenuManager.menu.Draw.e and myHero:CanUseSpell(_E) == READY then
+		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillE.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.eColor))
+	end
+end
+
+function ChampRyze:OnDash(unit, spell)
+	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
+		CastSpell(_E, unit)
+	end
+end
+
+function ChampRyze:OnInteruptable(unit, spell)
+	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
+		CastSpell(_E, unit)
+	end
+end
+
+function ChampRyze:ProcessSpell(unit, spell)
+	
+end
+
+function ChampRyze:ApplyBuff(source, unit, buff)
+	if source and unit and buff and source.isMe and unit.isMe then
+		if buff.name == "ryzeqiconnocharge" then
+			self.runeCount = 0
+		elseif buff.name == "ryzeqiconhalfcharge" then
+			self.runeCount = 1
+		elseif buff.name == "ryzeqiconfullcharge" then
+			self.runeCount = 2
+		end
+	end
+end
+
+function ChampRyze:RemoveBuff(source, unit, buff)
+
+end
+
+function ChampRyze:CreateObj(obj)
+	
+end
+
+function ChampRyze:SetupEvade()
+	--_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
+end
+
+function ChampRyze:GetDamage(target)
+	local myDmg = 0
+	if myHero:CanUseSpell(_Q) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillQ.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_W) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillW.Damage(myHero, target)
+	end
+	if myHero:CanUseSpell(_E) == READY then
+		myDmg = myDmg + _G.azBundle.ChampionData.SkillE.Damage(myHero, target)
+	end
+	local sheenItem = _G.azBundle.ItemDmgManager:SheenItem()
+	if sheenItem then
+		if sheenItem == "S" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:Sheen(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:TriForce(target)
+		elseif sheenItem == "T" then
+			myDmg = myDmg + _G.azBundle.ItemDmgManager:LichBane(target)
+		end
+	end
+	return myDmg
+end
+--[[-----------------------------------------------------
+--------------------------/RYZE--------------------------
+-----------------------------------------------------]]--
+
+--[[-----------------------------------------------------
+-------------------------HEIMER--------------------------
+-----------------------------------------------------]]--
+class("ChampHeimer")
+function ChampHeimer:__init()
+	_G.azBundle.PrintManager:General("Loaded.")
+	
+	self.ChampData = {
+		useAutoMode = true,
+		useFleeMode = false,
+		useInteruptable = true,
+		useProcessSpell = false,
+		useApplyBuff = true,
+		useRemoveBuff = false,
+		usePreTick = false,
+		useCreateObj = true,
+		useAntiDash = true
+	}
+	
+	self.target = MyTarget(1100, 1100, 1100, DAMAGE_MAGIC)
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Combo Settings <<", "Combo")
+		_G.azBundle.MenuManager.menu.Combo:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("rq", "Use R Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("rw", "Use R W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("re", "Use R E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("r", "Use R", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Combo:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey(" "))
+		
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Harass Settings <<", "Harass")
+		_G.azBundle.MenuManager.menu.Harass:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Harass:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.Harass:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("C"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Lane Clear Settings <<", "LaneClear")
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LaneClear:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Jungle Clear Settings <<", "JungleClear")
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.JungleClear:addParam("key", "Jungle Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("V"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Last Hit Settings <<", "LastHit")
+		_G.azBundle.MenuManager.menu.LastHit:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("qMana", "Use Q Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("wMana", "Use W Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("eMana", "Use E Above Mana %", SCRIPT_PARAM_SLICE, 45, 0, 100, 0)
+		_G.azBundle.MenuManager.menu.LastHit:addParam("key", "Lane Clear Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Flee Settings <<", "Flee")
+		_G.azBundle.MenuManager.menu.Flee:addParam("q", "Use Q", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("w", "Use W", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("e", "Use E", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Flee:addParam("key", "Flee Key", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("T"))
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Auto Settings <<", "Auto")
+		_G.azBundle.MenuManager.menu.Auto:addParam("autoQ", "Auto Tower in Comfort Zone", SCRIPT_PARAM_ONKEYTOGGLE, false, GetKey("J"))
+		_G.azBundle.MenuManager.menu.Auto:addParam("levelSequance", "Auto Level Sequance", SCRIPT_PARAM_LIST, 4, {
+			[1] = "Q-W-E-Max W-Max Q",
+			[2] = "E-W-Q-Max W-Max Q",
+			[3] = "W-Q-E-Max W-Max Q",
+			
+			[4] = "Q-W-E-Max Q-Max W",
+			[5] = "E-W-Q-Max Q-Max W",
+			[6] = "W-Q-E-Max Q-Max W",
+			
+			[7] = "Q-W-E-Max E-Max W",
+			[8] = "E-W-Q-Max E-Max W",
+			[9] = "W-Q-E-Max E-Max W",
+			
+			[10] = "E-Q-W-Max Q-Max W",
+		})
+	
+	self.levelSequances = {
+		[1] = {1,2,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[2] = {3,1,2,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[3] = {2,1,3,2,2,4,2,1,2,1,4,1,1,3,3,4,3,3},
+		[4] = {1,2,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[5] = {3,2,1,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[6] = {2,1,3,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3},
+		[7] = {1,2,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[8] = {3,2,1,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[9] = {2,1,3,3,3,4,3,1,3,2,4,1,1,1,2,4,2,2},
+		[10] = {3,1,2,1,1,4,1,2,1,2,4,2,2,3,3,4,3,3}
+	}
+	
+	_G.azBundle.MenuManager.menu:addSubMenu(">> Draw Settings <<", "Draw")
+		_G.azBundle.MenuManager.menu.Draw:addParam("q", "Draw Q Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("qColor", "Q Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("e", "Draw E Range", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("eColor", "E Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("w", "Draw W Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("wColor", "W Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("r", "Draw R Range", SCRIPT_PARAM_ONOFF, false)
+		_G.azBundle.MenuManager.menu.Draw:addParam("rColor", "R Range Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("target", "Draw Target", SCRIPT_PARAM_ONOFF, true)
+		_G.azBundle.MenuManager.menu.Draw:addParam("targetColor", "Target Color", SCRIPT_PARAM_COLOR, {255, 41, 41, 41})
+		_G.azBundle.MenuManager.menu.Draw:addParam("damage", "Draw Damage", SCRIPT_PARAM_ONOFF, true)
+	
+	_G.azBundle.MenuManager.menu.Auto:permaShow("autoQ")
+end
+
+function ChampHeimer:PreTick()
+	
+end
+
+function ChampHeimer:AARange()
+	return myHero.range + myHero.boundingRadius
+end
+
+function ChampHeimer:ComboMode()
+	self.target.champion:update()
+	
+	local myTarget = self.target.champion.target
+	if myTarget and ValidTarget(myTarget, 1000) then
+		
+		if _G.azBundle.MenuManager.menu.Combo.q and myHero:CanUseSpell(_Q) == READY then
 				local CastPosition, HitChance = VP:GetLineCastPosition(myTarget, _G.azBundle.ChampionData.SkillQ.delay, _G.azBundle.ChampionData.SkillQ.width, _G.azBundle.ChampionData.SkillQ.range, _G.azBundle.ChampionData.SkillQ.speed, myHero, false)
 				if CastPosition and HitChance and HitChance >= 2 and GetDistance(CastPosition) < _G.azBundle.ChampionData.SkillQ.range then
 					CastSpell(_Q, CastPosition.x, CastPosition.z)
@@ -2956,7 +4480,7 @@ function ChampRyze:ComboMode()
 	end
 end
 
-function ChampRyze:LaneClearMode()
+function ChampHeimer:LaneClearMode()
 	self.target.minion:update()
 	
 	local bestEBuff = nil
@@ -3184,7 +4708,7 @@ function ChampRyze:LaneClearMode()
 	end
 end
 
-function ChampRyze:JungleClearMode()
+function ChampHeimer:JungleClearMode()
 	self.target.jungle:update()
 	
 	for m, minion in pairs(self.target.jungle.objects) do
@@ -3232,7 +4756,7 @@ function ChampRyze:JungleClearMode()
 	end
 end
 
-function ChampRyze:HarassMode()
+function ChampHeimer:HarassMode()
 	self.target.champion:update()
 	self.target.minion:update()
 	
@@ -3284,7 +4808,7 @@ function ChampRyze:HarassMode()
 	end
 end
 
-function ChampRyze:LastHitMode()
+function ChampHeimer:LastHitMode()
 	self.target.champion:update()
 	self.target.minion:update()
 	
@@ -3305,15 +4829,15 @@ function ChampRyze:LastHitMode()
 	end
 end
 
-function ChampRyze:FleeMode()
+function ChampHeimer:FleeMode()
 	
 end
 
-function ChampRyze:AutoMode()
+function ChampHeimer:AutoMode()
 	
 end
 
-function ChampRyze:Draw()
+function ChampHeimer:Draw()
 	if _G.azBundle.MenuManager.menu.Draw.q and myHero:CanUseSpell(_Q) == READY then
 		DrawCircle2(myHero.x, myHero.y, myHero.z, _G.azBundle.ChampionData.SkillQ.range, RGBColor(_G.azBundle.MenuManager.menu.Draw.qColor))
 	end
@@ -3327,23 +4851,23 @@ function ChampRyze:Draw()
 	end
 end
 
-function ChampRyze:OnDash(unit, spell)
+function ChampHeimer:OnDash(unit, spell)
 	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
 		CastSpell(_E, unit)
 	end
 end
 
-function ChampRyze:OnInteruptable(unit, spell)
+function ChampHeimer:OnInteruptable(unit, spell)
 	if unit and unit.team ~= myHero.team and myHero:CanUseSpell(_E) == READY and GetDistance(unit) <= _G.azBundle.ChampionData.SkillE.range then
 		CastSpell(_E, unit)
 	end
 end
 
-function ChampRyze:ProcessSpell(unit, spell)
+function ChampHeimer:ProcessSpell(unit, spell)
 	
 end
 
-function ChampRyze:ApplyBuff(source, unit, buff)
+function ChampHeimer:ApplyBuff(source, unit, buff)
 	if source and unit and buff and source.isMe and unit.isMe then
 		if buff.name == "ryzeqiconnocharge" then
 			self.runeCount = 0
@@ -3355,19 +4879,19 @@ function ChampRyze:ApplyBuff(source, unit, buff)
 	end
 end
 
-function ChampRyze:RemoveBuff(source, unit, buff)
+function ChampHeimer:RemoveBuff(source, unit, buff)
 
 end
 
-function ChampRyze:CreateObj(obj)
+function ChampHeimer:CreateObj(obj)
 	
 end
 
-function ChampRyze:SetupEvade()
+function ChampHeimer:SetupEvade()
 	--_G.azBundle.EvadeManager:AddDashSpell(_Q, "Q", "target", _G.azBundle.ChampionData.SkillQ, "enemy", true)
 end
 
-function ChampRyze:GetDamage(target)
+function ChampHeimer:GetDamage(target)
 	local myDmg = 0
 	if myHero:CanUseSpell(_Q) == READY then
 		myDmg = myDmg + _G.azBundle.ChampionData.SkillQ.Damage(myHero, target)
@@ -3391,7 +4915,7 @@ function ChampRyze:GetDamage(target)
 	return myDmg
 end
 --[[-----------------------------------------------------
---------------------------/RYZE--------------------------
+-------------------------/HEIMER-------------------------
 -----------------------------------------------------]]--
 
 function OnLoad()
@@ -3411,14 +4935,19 @@ function OnLoad()
 		champLoaded = true
 	elseif myHero.charName == "Taliyah" then
 		_G.azBundle.Champion = ChampTaliyah()
-		_G.azBundle.Champion:SetupEvade()
 		champLoaded = true
 	elseif myHero.charName == "Ryze" then
 		_G.azBundle.Champion = ChampRyze()
-		_G.azBundle.Champion:SetupEvade()
+		champLoaded = true
+	elseif myHero.charName == "Heimerdinger" then
+		_G.azBundle.Champion = ChampHeimer()
 		champLoaded = true
 	else
 		_G.azBundle.PrintManager:General("There was a error loading your champion.")
+	end
+	
+	if champLoaded then
+		_G.azBundle.PredManager = PredictionManager()
 	end
 end
 
