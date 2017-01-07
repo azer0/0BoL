@@ -1,10 +1,10 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
-v24
--Twaeked E slightly
--Fixed a small logic error
--Removed some print spam
+v25
+-Adjusted E last hit calculations
+-Added FH Prediction, and HPrediction
+-Fixed a error in orb walk selction
 
 v23
 -Fixed a error in auto E
@@ -41,7 +41,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 24
+	Version = 25
 }
 
 --[[
@@ -83,9 +83,12 @@ local MyChampData = {
 		name = "CassiopeiaTwinFang",
 		pretty = "Twin Fang",
 		range = 700,
+		delay = 0.3,
+		speed = 1900,
 		type = "target",
 		APDamage = function(source, target)
-				return 30 + 25 * source:GetSpellData(_E).level + 0.55 * source.ap
+			--return 30 + 25 * source:GetSpellData(_E).level + 0.55 * source.ap
+			return ((48 + 4 * source.level) + (0.1 * source.ap)) + ((10 + 30 * source:GetSpellData(_E).level) + (.35 * source.ap))
 		end
 	},
 	["R"] = {
@@ -107,13 +110,15 @@ local MyChampData = {
 local HP_Q = nil
 local HP_W = nil
 local HP_R = nil
-
+local mainMenu = nil
 --
 --START REQUIRED DOWNLOAD
 --
 local toDownload = {
 	["HPrediction"] = "https://raw.githubusercontent.com/BolHTTF/BoL/master/HTTF/Common/HPrediction.lua",
-	["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua"
+	["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua",
+	["FHPrediction"] = "http://api.funhouse.me/download-lua.php",
+	["SPrediction"] = "https://raw.githubusercontent.com/nebelwolfi/BoL/master/Common/SPrediction.lua"
 }
 
 local isDownloading = false
@@ -127,7 +132,7 @@ function FileDownloaded()
 	downloadCount = downloadCount - 1
 	if downloadCount == 0 then
 		isDownloading = false
-		LibDownloaderPrint("<font color=\"#6699FF\">Downloads complete. Please press F9 twice to reload.</font>")
+		LibDownloaderPrint("<font color=\"#6699FF\">Download(s) complete. Please press F9 twice to reload.</font>")
 	end
 end
 
@@ -172,8 +177,6 @@ if _G.zeroConfig.UseUpdater then
 			AutoUpdaterPrint("Please do not reload until complete.")
 			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
 			hasBeenUpdated = true
-		else
-			AutoUpdaterPrint("No update needed, your using the latest version.")
 		end
 	end
 end
@@ -279,7 +282,7 @@ function RegisterOrbWalks()
 	elseif _Pewalk then
 		pewDetected = true
 		GeneralPrint("PeWalk detected.")
-	elseif _G.NebelwolfisOrbWalkerInit then
+	elseif FileExist(LIB_PATH .. "Nebelwolfi's Orb Walker.lua") then
 		nebiDetected = true
 		GeneralPrint("Nebelwolfid Orb Walk detected.")
 	elseif FileExist(LIB_PATH .. "SxOrbWalk.lua") then
@@ -305,52 +308,65 @@ end
 --
 local vPredDetected = false
 local hPredDetected = false
-local dPredDetected = false
-local kPredDetected = false
 local fhPredDetected = false
+local sPredDetected = false
 
 local VP = VPrediction()
 local HPred = nil
-local DPred = nil
-local KPred = nil
+local SPred = nil
 
 function RegisterPredictions()
 	vPredDetected = true
 	
-	if FileExist(LIB_PATH.."DivinePred.luac") and FileExist(LIB_PATH.."DivinePred.lua") then
-		dPredDetected = true
-		require "DivinePred"
-		DPred = DivinePred()
-		if DP.VERSION < 3.5 then
-			GeneralPrint("Devine Prediction seems to be out of date, please update it if you plan on using it.")
+	if FileExist(LIB_PATH.."FHPrediction.lua") then
+		fhPredDetected = true
+		require("FHPrediction")
+		if not FHPrediction then
+			GeneralPrint("There was a error using Fun House Prediction. If you are not using it disregard this.")
+			fhPredDetected = false
 		end
 	end
-	--[[
+	
 	if FileExist(LIB_PATH.."HPrediction.lua") then
 		hPredDetected = true
-		require 'HPrediction'
-		HPred = HPrediction()
+		require("HPrediction")
 		if not _G.HPrediction_Version then
-			GeneralPrint("HPrediction seems to be out of date, please update it if you plan on using it.")
+			GeneralPrint("There was a error using HPrediction. If you are not using it disregard this.")
+			hPredDetected = false
 		else
 			HP_Q = HPSkillshot({delay = MyChampData["Q"].delay, range = MyChampData["Q"].range, speed = MyChampData["Q"].speed, type = "DelayCircle", width = MyChampData["Q"].width, radius = MyChampData["Q"].radius})
 			HP_W = HPSkillshot({delay = MyChampData["W"].delay, range = MyChampData["W"].range, speed = MyChampData["W"].speed, type = "DelayCircle", width = MyChampData["W"].width, radius = MyChampData["Q"].radius})
 			HP_R = HPSkillshot({delay = MyChampData["R"].delay, range = MyChampData["R"].range, speed = MyChampData["R"].speed, type = "Triangle", width = MyChampData["R"].width, radius = MyChampData["Q"].radius})
 		end
 	end
-	if FileExist(LIB_PATH.."KPrediction.lua") then
-		kPredDetected = true
-		require 'KPrediction'
-		KPred = KPrediction()
+	
+	if FileExist(LIB_PATH.."SPrediction.lua") then
+		sPredDetected = true
+		require("SPrediction")
+		SPred = SPrediction()
 	end
-	if FileExist(LIB_PATH.."FHPrediction.lua") then
-		fhPredDetected = true
-		require("FHPrediction")
-		if not FHPrediction then
-			GeneralPrint("There was a error using Fun House Prediction. If you are not using it disregard this.")
-		end
+end
+
+function PredictPosition(unit, when)
+	if mainMenu.Advanced.locPred == 1 then
+		return unit.position
+	elseif mainMenu.Advanced.locPred == 2 then
+		return FHPrediction.PredictPosition(unit, when)
+	elseif mainMenu.Advanced.locPred == 3 then
+		return SPred:PredictPos(unit, when)
+	else
+		return unit.position
 	end
-	]]--
+end
+
+function PredictHealth(unit, when)
+	if mainMenu.Advanced.hpPred == 1 then
+		return VP:GetPredictedHealth(unit, when)
+	elseif mainMenu.Advanced.hpPred == 2 then
+		return FHPrediction.PredictHealth(unit, when)
+	else
+		return unit.health
+	end
 end
 
 RegisterPredictions()
@@ -361,8 +377,6 @@ RegisterPredictions()
 --
 --START Script Config
 --
-
-local mainMenu = nil
 
 function RegisterMenu()
 	mainMenu = scriptConfig("0Cassiopeia", "Cassiopeia")
@@ -420,8 +434,7 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("qMinionPred", "Q Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
-				[3] = "FH Prediction",
-				[4] = "KPrediction"
+				[3] = "FH Prediction"
 			})
 			mainMenu.Advanced:addParam("qMinionVPHC", "Q Hit Chance Minion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("qMinionHPHC", "Q Hit Chance Minion (0-5) (HPred)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
@@ -430,8 +443,7 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("qChampsPred", "Q Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
-				[3] = "FH Prediction",
-				[4] = "KPrediction"
+				[3] = "FH Prediction"
 			})
 			mainMenu.Advanced:addParam("qChampsVPHC", "Q Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("qChampsHPHC", "Q Hit Chance Champion (0-5) (HPred)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
@@ -440,8 +452,7 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("wMinionPred", "W Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
-				[3] = "FH Prediction",
-				[4] = "KPrediction"
+				[3] = "FH Prediction"
 			})
 			mainMenu.Advanced:addParam("wMinionVPHC", "W Hit Chance Minion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("wMinionHPHC", "W Hit Chance Minion (0-5) (HPred)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
@@ -450,8 +461,7 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("wChampsPred", "Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
-				[3] = "FH Prediction",
-				[4] = "KPrediction"
+				[3] = "FH Prediction"
 			})
 			
 			mainMenu.Advanced:addParam("wChampsVPHC", "W Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
@@ -461,8 +471,7 @@ function RegisterMenu()
 			mainMenu.Advanced:addParam("rChampsPred", "Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
-				[3] = "FH Prediction",
-				[4] = "KPrediction"
+				[3] = "FH Prediction"
 			})
 			mainMenu.Advanced:addParam("rChampsVPHC", "R Hit Chance Champion (0-5)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
 			mainMenu.Advanced:addParam("rChampsHPHC", "R Hit Chance Champion (0-5) (HPred)", SCRIPT_PARAM_SLICE, 3, 0, 5, 0)
@@ -470,6 +479,17 @@ function RegisterMenu()
 			
 			mainMenu.Advanced:addParam("autoE", "Auto Last Hit (E)", SCRIPT_PARAM_ONOFF, true)
 			mainMenu.Advanced:addParam("autoEC", "Auto E Champions", SCRIPT_PARAM_ONOFF, true)
+			
+			mainMenu.Advanced:addParam("hpPred", "Health Prediction", SCRIPT_PARAM_LIST, 2, {
+				[1] = "VPrediction",
+				[2] = "FH Prediction"
+			})
+			
+			mainMenu.Advanced:addParam("locPred", "Location Prediction", SCRIPT_PARAM_LIST, 2, {
+				[1] = "None",
+				[2] = "FH Prediction",
+				[3] = "SPrediction"
+			})
 		
 			mainMenu.Advanced:permaShow("autoE")
 			mainMenu.Advanced:permaShow("autoEC")
@@ -702,8 +722,8 @@ function OnLoad()
 	
 	DelayAction(function()
 	    GeneralPrint("Successfully Loaded!")
-		GeneralPrint("[v" .. scriptData.Version .. "] SAC:R is currently the only fully supported Orb Walk.")
-		GeneralPrint("[v" .. scriptData.Version .. "] VPred is currently the only supported prediction.")
+		GeneralPrint("[v" .. scriptData.Version .. "] Please make sure to set your keys.")
+		GeneralPrint("[v" .. scriptData.Version .. "] Now supports: VPred, HPred, FHPred.")
 	end, 5)
 	DelayAction(function()
 		if _G.DancingShoes_Loaded and _G.Evade then
@@ -722,13 +742,11 @@ function OnTick()
 	end
 	AutoKillTick()
 	
-	--if mainMenu.WallJump.key then FleeTick() return end
-	
 	if mainMenu.Jungle.key then JungleTick() end
 	if mainMenu.Lane.key then LaneClearTick() end
 	if mainMenu.Combo.key then ComboTick() end
 	if mainMenu.Harass.key then HarassTick() end
-	--if mainMenu.
+	
 	if mainMenu.Advanced.autoEC and myHero:CanUseSpell(_E) == READY then
 		local lowestHPInRange = nil
 		for i, object in pairs(GetEnemyHeroes()) do
@@ -750,11 +768,17 @@ function OnTick()
 		if not mainMenu.Combo.key then
 			closeEnemyMinions:update()
 			for _, minion in pairs(closeEnemyMinions.objects) do
-				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range and minion.health < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) / 4.25) then
-				--local nT = 0.25 + 1900 / GetDistance(minion.visionPos, myHero.visionPos) + 0.1
-				--if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range and minion.health < VP:GetPredictedHealth(minion, 0.25) then
-					CastSpell(_E, minion)
-					return
+				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range then
+					--local when = GetDistance(minion) / MyChampData["E"].speed + MyChampData["E"].delay
+					--local predHp = PredictHealth(minion, when)
+					--print(predHp)
+					--if predHp < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) * .40) then
+					--local nT = 0.25 + 1900 / GetDistance(minion.visionPos, myHero.visionPos) + 0.1
+					--if minion.health < VP:GetPredictedHealth(minion, 0.25) then
+					if MyChampData["E"].APDamage(myHero, minion) > PredictHealth(minion, 0.15) then
+						CastSpell(_E, minion)
+						return
+					end
 				end
 			end
 		end
@@ -1006,6 +1030,11 @@ function ComboTick()
 				if QPos and QHitChance and QHitChance >= mainMenu.Advanced.qChampsHPHC then
 					CastSpell(_Q, QPos.x, QPos.z)
 				end
+			elseif mainMenu.Advanced.qChampsPred == 3 then
+				local pos, hc, info = FHPrediction.GetPrediction("Q", myTarget)
+				if hc > 0 then
+					CastSpell(_Q, pos.x, pos.z)
+				end
 			end
 		end
 		
@@ -1020,6 +1049,11 @@ function ComboTick()
 				local WPos, WHitChance = HPred:GetPredict(HP_W, myTarget, myHero, false)
 				if WPos and WHitChance and WHitChance >= mainMenu.Advanced.wChampsHPHC then
 					CastSpell(_W, WPos.x, WPos.z)
+				end
+			elseif mainMenu.Advanced.wChampsPred == 3 then
+				local pos, hc, info = FHPrediction.GetPrediction("W", myTarget)
+				if hc > 0 then
+					CastSpell(_W, pos.x, pos.z)
 				end
 			end
 		end
@@ -1046,14 +1080,31 @@ function ComboTick()
 					if QPos and QHitChance and QHitChance >= mainMenu.Advanced.qChampsHPHC then
 						CastSpell(_Q, QPos.x, QPos.z)
 					end
+				elseif mainMenu.Advanced.qChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("Q", myTarget)
+					if hc > 0 then
+						CastSpell(_Q, pos.x, pos.z)
+					end
 				end
 			end
 		
 			if mainMenu.Combo.w and myHero:CanUseSpell(_W) == READY and GetDistance(object) <= MyChampData["W"].range then
-				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
-					CastSpell(_W, CastPosition.x, CastPosition.z)
-					castOnTarget = true
+				if mainMenu.Advanced.wChampsPred == 1 then
+					local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+					if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						castOnTarget = true
+					end
+				elseif mainMenu.Advanced.wChampsPred == 2 then
+					local WPos, WHitChance = HPred:GetPredict(HP_W, object, myHero, false)
+					if WPos and WHitChance and WHitChance >= mainMenu.Advanced.wChampsHPHC then
+						CastSpell(_W, WPos.x, WPos.z)
+					end
+				elseif mainMenu.Advanced.wChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("W", myTarget)
+					if hc > 0 then
+						CastSpell(_W, pos.x, pos.z)
+					end
 				end
 			end
 			
@@ -1075,18 +1126,42 @@ function HarassTick()
 	myTarget = ts.target
 	if myTarget then
 		if mainMenu.Harass.q and mainMenu.Harass.qMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_Q) == READY and GetDistance(myTarget) <= MyChampData["Q"].range then
-			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-				return
+			if mainMenu.Advanced.qChampsPred == 1 then
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
+					CastSpell(_Q, CastPosition.x, CastPosition.z)
+					return
+				end
+			elseif mainMenu.Advanced.qChampsPred == 2 then
+				local QPos, QHitChance = HPred:GetPredict(HP_Q, myTarget, myHero, false)
+				if QPos and QHitChance and QHitChance >= mainMenu.Advanced.qChampsHPHC then
+					CastSpell(_Q, QPos.x, QPos.z)
+				end
+			elseif mainMenu.Advanced.qChampsPred == 3 then
+				local pos, hc, info = FHPrediction.GetPrediction("Q", myTarget)
+				if hc > 0 then
+					CastSpell(_Q, pos.x, pos.z)
+				end
 			end
 		end
 		
 		if mainMenu.Harass.w and mainMenu.Harass.wMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_W) == READY and GetDistance(myTarget) <= MyChampData["W"].range then
-			local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-			if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
-				CastSpell(_W, CastPosition.x, CastPosition.z)
-				return
+			if mainMenu.Advanced.wChampsPred == 1 then
+				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
+					CastSpell(_W, CastPosition.x, CastPosition.z)
+					return
+				end
+			elseif mainMenu.Advanced.wChampsPred == 2 then
+				local WPos, WHitChance = HPred:GetPredict(HP_W, myTarget, myHero, false)
+				if WPos and WHitChance and WHitChance >= mainMenu.Advanced.wChampsHPHC then
+					CastSpell(_W, WPos.x, WPos.z)
+				end
+			elseif mainMenu.Advanced.wChampsPred == 3 then
+				local pos, hc, info = FHPrediction.GetPrediction("W", myTarget)
+				if hc > 0 then
+					CastSpell(_W, pos.x, pos.z)
+				end
 			end
 		end
 	end
@@ -1096,18 +1171,42 @@ function HarassTick()
 	for i, object in pairs(GetEnemyHeroes()) do
 		if object and object.valid and not object.dead and object.visible and object.bTargetable then
 			if mainMenu.Harass.q and mainMenu.Harass.qMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_Q) == READY and GetDistance(object) <= MyChampData["Q"].range then
-				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-					return
+				if mainMenu.Advanced.qChampsPred == 1 then
+					local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
+					if HitChance and CastPosition and HitChance >= mainMenu.Advanced.qChampsPred then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						return
+					end
+				elseif mainMenu.Advanced.qChampsPred == 2 then
+					local QPos, QHitChance = HPred:GetPredict(HP_Q, object, myHero, false)
+					if QPos and QHitChance and QHitChance >= mainMenu.Advanced.qChampsHPHC then
+						CastSpell(_Q, QPos.x, QPos.z)
+					end
+				elseif mainMenu.Advanced.qChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("Q", object)
+					if hc > 0 then
+						CastSpell(_Q, pos.x, pos.z)
+					end
 				end
 			end
 		
 			if mainMenu.Harass.w and mainMenu.Harass.wMana <= 100*myHero.mana/myHero.maxMana and myHero:CanUseSpell(_W) == READY and GetDistance(object) <= MyChampData["W"].range then
-				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
-					CastSpell(_W, CastPosition.x, CastPosition.z)
-					return
+				if mainMenu.Advanced.wChampsPred == 1 then
+					local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(object, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+					if HitChance and CastPosition and HitChance >= mainMenu.Advanced.wChampsPred then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						return
+					end
+				elseif mainMenu.Advanced.wChampsPred == 2 then
+					local WPos, WHitChance = HPred:GetPredict(HP_W, object, myHero, false)
+					if WPos and WHitChance and WHitChance >= mainMenu.Advanced.wChampsHPHC then
+						CastSpell(_W, WPos.x, WPos.z)
+					end
+				elseif mainMenu.Advanced.wChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("W", object)
+					if hc > 0 then
+						CastSpell(_W, pos.x, pos.z)
+					end
 				end
 			end
 		end
@@ -1144,21 +1243,45 @@ function AutoKillTick()
 			
 			--KS Q
 			if mainMenu.Kill.q and myHero:CanUseSpell(_Q) == READY and ValidTargetedT(enemy, MyChampData["Q"].range) and enemy.health <= eDmg then
-				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 2 then
-					CastSpell(_Q, CastPosition.x, CastPosition.z)
-					KillStealPrint(enemy, "Q")
-					return
+				if mainMenu.Advanced.qChampsPred == 1 then
+					local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["Q"].delay, MyChampData["Q"].width, MyChampData["Q"].range, MyChampData["Q"].speed, myHero)
+					if HitChance and CastPosition and HitChance >= 2 then
+						CastSpell(_Q, CastPosition.x, CastPosition.z)
+						KillStealPrint(enemy, "Q")
+						return
+					end
+				elseif mainMenu.Advanced.qChampsPred == 2 then
+					local QPos, QHitChance = HPred:GetPredict(HP_Q, enemy, myHero, false)
+					if QPos and QHitChance and QHitChance >= mainMenu.Advanced.qChampsHPHC then
+						CastSpell(_Q, QPos.x, QPos.z)
+					end
+				elseif mainMenu.Advanced.qChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("Q", enemy)
+					if hc > 0 then
+						CastSpell(_Q, pos.x, pos.z)
+					end
 				end
 			end
 			
 			--KS W
 			if mainMenu.Kill.w and myHero:CanUseSpell(_W) == READY and ValidTargetedT(enemy, MyChampData["W"].range) and enemy.health <= eDmg then
-				local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
-				if HitChance and CastPosition and HitChance >= 2 then
-					CastSpell(_W, CastPosition.x, CastPosition.z)
-					KillStealPrint(enemy, "W")
-					return
+				if mainMenu.Advanced.wChampsPred == 1 then
+					local CastPosition, HitChance, Position = VP:GetCircularAOECastPosition(myTarget, MyChampData["W"].delay, MyChampData["W"].width, MyChampData["W"].range, MyChampData["W"].speed, myHero)
+					if HitChance and CastPosition and HitChance >= 2 then
+						CastSpell(_W, CastPosition.x, CastPosition.z)
+						KillStealPrint(enemy, "W")
+						return
+					end
+				elseif mainMenu.Advanced.wChampsPred == 2 then
+					local WPos, WHitChance = HPred:GetPredict(HP_W, enemy, myHero, false)
+					if WPos and WHitChance and WHitChance >= mainMenu.Advanced.wChampsHPHC then
+						CastSpell(_W, WPos.x, WPos.z)
+					end
+				elseif mainMenu.Advanced.wChampsPred == 3 then
+					local pos, hc, info = FHPrediction.GetPrediction("W", enemy)
+					if hc > 0 then
+						CastSpell(_W, pos.x, pos.z)
+					end
 				end
 			end
 		end
