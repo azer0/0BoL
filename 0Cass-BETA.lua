@@ -4,6 +4,7 @@ if myHero.charName ~= "Cassiopeia" then return end
 v25
 -Adjusted E last hit calculations
 -Added FH Prediction, and HPrediction
+-Fixed a error in orb walk selction
 
 v23
 -Fixed a error in auto E
@@ -774,7 +775,7 @@ function OnTick()
 					--if predHp < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) * .40) then
 					--local nT = 0.25 + 1900 / GetDistance(minion.visionPos, myHero.visionPos) + 0.1
 					--if minion.health < VP:GetPredictedHealth(minion, 0.25) then
-					if getDmg("E", minion, myHero) < minion.health then
+					if getDmg("E", minion, myHero) > PredictHealth(minion, 0.15) then
 						CastSpell(_E, minion)
 						return
 					end
