@@ -1,6 +1,9 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v26
+-Fixed a few small errors
+
 v25
 -Adjusted E last hit calculations
 -Added FH Prediction, and HPrediction
@@ -41,7 +44,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 25
+	Version = 26
 }
 
 --[[
@@ -88,7 +91,7 @@ local MyChampData = {
 		type = "target",
 		APDamage = function(source, target)
 			--return 30 + 25 * source:GetSpellData(_E).level + 0.55 * source.ap
-			return ((48 + 4 * source.level) + (0.1 * source.ap)) + ((10 + 30 * source:GetSpellData(_E).level) + (.35 * source.ap))
+			return ((48 + 4 * source.level) + (0.1 * source.ap)) + ((10 + 30 * source:GetSpellData(_E).level) + (.35 * source.ap)) - (3 * source.level)
 		end
 	},
 	["R"] = {
@@ -769,12 +772,6 @@ function OnTick()
 			closeEnemyMinions:update()
 			for _, minion in pairs(closeEnemyMinions.objects) do
 				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range then
-					--local when = GetDistance(minion) / MyChampData["E"].speed + MyChampData["E"].delay
-					--local predHp = PredictHealth(minion, when)
-					--print(predHp)
-					--if predHp < MyChampData["E"].APDamage(myHero, minion) - (MyChampData["E"].APDamage(myHero, minion) * .40) then
-					--local nT = 0.25 + 1900 / GetDistance(minion.visionPos, myHero.visionPos) + 0.1
-					--if minion.health < VP:GetPredictedHealth(minion, 0.25) then
 					if MyChampData["E"].APDamage(myHero, minion) > PredictHealth(minion, 0.15) then
 						CastSpell(_E, minion)
 						return
