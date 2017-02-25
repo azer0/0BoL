@@ -1,6 +1,10 @@
 if myHero.charName ~= "Cassiopeia" then return end
 
 --[[
+v27
+-Adjusted last hitting with E
+-Enable 
+
 v26
 -Fixed a few small errors
 
@@ -44,7 +48,7 @@ _G.zeroConfig = {
 }
 
 local scriptData = {
-	Version = 26
+	Version = 27
 }
 
 --[[
@@ -434,6 +438,8 @@ function RegisterMenu()
 			mainMenu.Kill:addParam("r", "Use R", SCRIPT_PARAM_ONOFF, false)
 		
 		mainMenu:addSubMenu(">> Advanced Settings <<", "Advanced")
+			mainMenu.Advanced:addParam("eOverKill", "Estimate Overkill By Percentage", SCRIPT_PARAM_SLICE, 8, 1, 100, 0)
+			
 			mainMenu.Advanced:addParam("qMinionPred", "Q Prediction", SCRIPT_PARAM_LIST, 1, {
 				[1] = "VPrediction",
 				[2] = "HPrediction",
@@ -772,7 +778,7 @@ function OnTick()
 			closeEnemyMinions:update()
 			for _, minion in pairs(closeEnemyMinions.objects) do
 				if ValidTargetedT(minion, MyChampData["E"].range) and GetDistance(minion) <= MyChampData["E"].range then
-					if MyChampData["E"].APDamage(myHero, minion) > PredictHealth(minion, 0.15) then
+					if MyChampData["E"].APDamage(myHero, minion) > (PredictHealth(minion, 0.05) + (minion.health * mainMenu.Advanced.eOverKill / 100)) then
 						CastSpell(_E, minion)
 						return
 					end
