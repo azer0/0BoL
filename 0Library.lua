@@ -1,4 +1,34 @@
-local zLibVer = 1
+local zLibVer = 2
+
+local UpdateHost = "raw.github.com"
+local UpdatePath = "/azer0/0BoL/master/Version/0Library.Version?rand=" .. math.random(1, 10000)
+local UpdatePath2 = "/azer0/0BoL/master/0Library.lua?rand=" .. math.random(1, 10000)
+local UpdateFile = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local VersionURL = "http://"..UpdateHost..UpdatePath
+local UpdateURL = "http://"..UpdateHost..UpdatePath2
+
+function AutoUpdaterPrint(msg)
+	print("<font color=\"#FF794C\"><b>0 Library</b></font> <font color=\"#FFDFBF\"><b>"..msg.."</b></font>")
+end
+
+local hasBeenUpdated = false
+
+if _G.zeroConfig.UseUpdater then
+	local sData = GetWebResult(UpdateHost, UpdatePath)
+	if sData then
+		local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
+		if sVer and sVer > scriptData.Version then
+			AutoUpdaterPrint("New update found [v" .. sVer .. "].")
+			AutoUpdaterPrint("Please do not reload until complete.")
+			DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
+			hasBeenUpdated = true
+		end
+	end
+end
+
+if hasBeenUpdated then
+	return
+end
 
 class("ZLib")
 function ZLib:__init(scriptShort, scriptName)
