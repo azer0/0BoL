@@ -46,7 +46,7 @@ if scriptInfo.doWeDownload then
 	
 	if isDownloading then return end
 else
-	require("0Library0")
+	require("0Library")
 	require("VPrediction")
 	require("FHPrediction")
 	require("TRPrediction")
