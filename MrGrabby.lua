@@ -3,7 +3,7 @@ if myHero.charName ~= "Blitzcrank" then return end
 local scriptInfo = {
 	doWeUpdate = true,
 	doWeDownload = true,
-	Version = 1
+	Version = 2
 }
 
 function LibDownloaderPrint(msg)
@@ -12,18 +12,16 @@ function LibDownloaderPrint(msg)
 	
 if scriptInfo.doWeDownload then
 	local toDownload = {
+		--Librarys
+		["0Library"] = "https://raw.githubusercontent.com/azer0/0BoL/master/0Library.lua",
 		--Predictions
-		["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua",
 		["FHPrediction"] = "http://api.funhouse.me/download-lua.php",
 		["TRPrediction"] = "https://raw.githubusercontent.com/Project4706/BoL/master/TRPrediction.lua",
-		--Librarys
-		["0Library"] = "https://raw.githubusercontent.com/azer0/0BoL/master/0Library.lua"
+		["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua",
 	}
 
 	local isDownloading = false
 	local downloadCount = 0
-
-	
 
 	function FileDownloaded()
 		downloadCount = downloadCount - 1
@@ -37,14 +35,19 @@ if scriptInfo.doWeDownload then
 		if FileExist(LIB_PATH .. libName .. ".lua") then
 			require(libName)
 		else
+			print(libUrl)
+			print(LIB_PATH .. libName .. ".lua")
 			isDownloading = true
 			downloadCount = downloadCount + 1
 			LibDownloaderPrint("<font color=\"#6699FF\">Downloading " .. libName .. ".</font>")
-			DownloadFile(libUrl, LIB_PATH .. libUrl .. ".lua", FileDownloaded)
+			DownloadFile(libUrl, LIB_PATH .. libName .. ".lua", FileDownloaded)
 		end
 	end
 	
-	if isDownloading then return end
+	if isDownloading then
+		LibDownloaderPrint("<font color=\"#6699FF\">Please double F9 after downloads are done.</font>")
+		return
+	end
 else
 	require("0Library")
 	require("VPrediction")
