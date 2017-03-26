@@ -1,4 +1,4 @@
-local zLibVer = 2
+local zLibVer = 3
 
 local UpdateHost = "raw.github.com"
 local UpdatePath = "/azer0/0BoL/master/Version/0Library.Version?rand=" .. math.random(1, 10000)
@@ -16,10 +16,10 @@ local hasBeenUpdated = false
 local sData = GetWebResult(UpdateHost, UpdatePath)
 if sData then
 	local sVer = type(tonumber(sData)) == "number" and tonumber(sData) or nil
-	if sVer and sVer > scriptData.Version then
+	if sVer and sVer > zLibVer then
 		AutoUpdaterPrint("New update found [v" .. sVer .. "].")
 		AutoUpdaterPrint("Please do not reload until complete.")
-		DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..scriptData.Version.." => "..sVer.."), press F9 twice to use the updated version.") end)
+		DownloadFile(UpdateURL, UpdateFile, function () AutoUpdaterPrint("Successfully updated. ("..zLibVer.." => "..sVer.."), press F9 twice to use the updated version.") end)
 		hasBeenUpdated = true
 	end
 end
