@@ -1,4 +1,4 @@
-local zLibVer = 3
+local zLibVer = 4
 
 local UpdateHost = "raw.github.com"
 local UpdatePath = "/azer0/0BoL/master/Version/0Library.Version?rand=" .. math.random(1, 10000)
@@ -28,9 +28,29 @@ if hasBeenUpdated then
 	return
 end
 
+------------------------------------------------------------------------------------------------------
+--
+--START: Utility Functions
+--
+function tableLength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
+local function round(num, idp)
+  local mult = 10^(idp or 0)
+  return math.floor(num * mult + 0.5) / mult
+end
+--
+--End: Utility Functions
+--
+------------------------------------------------------------------------------------------------------
 class("ZLib")
 function ZLib:__init(scriptShort, scriptName)
 	_G.ZLib = {
+		name = scriptName,
+		short = scriptShort,
 		menu = scriptConfig(scriptShort, scriptName),
 		myData = ZChampData(myHero),
 		printDisplay = ZPrintDisplay(scriptName),
@@ -38,8 +58,14 @@ function ZLib:__init(scriptShort, scriptName)
 		unit = ZUnitChecks(),
 		orbwalk = nil,
 		spellData = {},
-		antiDash = {}
+		antiDash = {},
+		shieldData = {},
+		heal = ZHealManager(),
+		skillShot = ZSkillShotCheck(),
+		notification = nil
 	}
+	
+	_G.ZLib.notification = ZNotifications()
 	
 	AddTickCallback(function() self:OnTick() end)
 	AddDrawCallback(function() self:OnDraw() end)
@@ -57,6 +83,7 @@ end
 
 function ZLib:OnDraw()
 	_G.ZLib.prediction:OnDraw()
+	_G.ZLib.notification:OnDraw()
 end
 ------------------------------------------------------------------------------------------------------
 --
@@ -99,6 +126,8 @@ function ZPrintDisplay:__init(myPrefix)
 	self.hideSpam = true
 	self.prefix = myPrefix
 	self.spam = nil
+	
+	self:Custom("Loaded [v" .. zLibVer .. "]")
 end
 
 function ZPrintDisplay:Error(message)
@@ -114,10 +143,22 @@ function ZPrintDisplay:Bad(message)
 	print("<font color=\"#FF794C\">[<b>" .. self.prefix .. "</b>]</font> <font color=\"#FFCE33\">" .. message .. ".</font>")
 end
 
+function ZPrintDisplay:Notice(message)
+	if self.spam == message then return end
+	self.spam = message
+	print("<font color=\"#FF794C\">[<b>" .. self.prefix .. "</b>]</font> <font color=\"#3FFF33\">" .. message .. ".</font>")
+end
+
 function ZPrintDisplay:Loaded(message)
 	if self.spam == message then return end
 	self.spam = message
 	print("<font color=\"#FF794C\">[<b>" .. self.prefix .. "</b>]</font> <font color=\"#3FFF33\">" .. message .. ".</font>")
+end
+
+function ZPrintDisplay:Custom(prefix, message)
+	if self.spam == message then return end
+	self.spam = message
+	print("<font color=\"#FF794C\">[<b>" .. prefix .. "</b>]</font> <font color=\"#3FFF33\">" .. message .. ".</font>")
 end
 --
 --End: Print Display (ZPrintDisplay)
@@ -141,7 +182,8 @@ function ZPrediction:__init()
 		["vpred"] = false,
 		["fhpred"] = false,
 		["trpred"] = false,
-		["spred"] = false
+		["spred"] = false,
+		["dpred"] = false
 	}
 	self.spellBinds = {
 		["TR"] = {
@@ -149,12 +191,19 @@ function ZPrediction:__init()
 			["w"] = nil,
 			["e"] = nil,
 			["r"] = nil
+		},
+		["DP"] = {
+			["q"] = nil,
+			["w"] = nil,
+			["e"] = nil,
+			["r"] = nil
 		}
 	}
+	self.DP = nil
 end
 
 function ZPrediction:BindSpell(slot, info, pred)
-	if slot and info and pred and info.shotType == "skillshot" then
+	if info.shotType == "skillshot" then
 		if pred == "TR" then
 			self:LoadPrediction("trpred")
 			if slot == "q" then
@@ -174,6 +223,7 @@ function ZPrediction:BindSpell(slot, info, pred)
 					self.spellBinds["TR"]["w"] = TR_BindSS({type = 'IsConic', delay = info.delay, range = info.range, width = info.width, speed = info.speed})
 				end
 			elseif slot == "e" then
+				print("e")
 				if info.skillType == "line" then
 					self.spellBinds["TR"]["e"] = TR_BindSS({type = 'IsLinear', delay = info.delay, range = info.range, width = info.width, speed = info.speed})
 				elseif info.skillType == "circle" then
@@ -188,6 +238,52 @@ function ZPrediction:BindSpell(slot, info, pred)
 					self.spellBinds["TR"]["r"] = TR_BindSS({type = 'IsRadial', delay = info.delay, range = info.range, width = info.width, speed = info.speed})
 				elseif info.skillType == "cone" then
 					self.spellBinds["TR"]["r"] = TR_BindSS({type = 'IsConic', delay = info.delay, range = info.range, width = info.width, speed = info.speed})
+				end
+			end
+		elseif pred == "DP" and self.DP then
+			if slot == "q" then
+				if info.skillType == "line" then
+					local lineQ = self.DP:LineSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["q"] = self.DP:bindSS("spellQ", lineQ, 60)
+				elseif info.skillType == "circle" then
+					local circleQ = self.DP:CircleSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["q"] = self.DP:bindSS("spellQ", circleQ, 60)
+				elseif info.skillType == "cone" then
+					local coneQ = self.DP:ConeSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["q"] = self.DP:bindSS("spellQ", coneQ, 60)
+				end
+			elseif slot == "w" then
+				if info.skillType == "line" then
+					local lineQ = self.DP:LineSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["w"] = self.DP:bindSS("spellW", lineQ, 60)
+				elseif info.skillType == "circle" then
+					local circleQ = self.DP:CircleSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["w"] = self.DP:bindSS("spellW", circleQ, 60)
+				elseif info.skillType == "cone" then
+					local coneQ = self.DP:ConeSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["w"] = self.DP:bindSS("spellW", coneQ, 60)
+				end
+			elseif slot == "e" then
+				if info.skillType == "line" then
+					local lineQ = self.DP:LineSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["e"] = self.DP:bindSS("spellE", lineQ, 60)
+				elseif info.skillType == "circle" then
+					local circleQ = self.DP:CircleSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["e"] = self.DP:bindSS("spellE", circleQ, 60)
+				elseif info.skillType == "cone" then
+					local coneQ = self.DP:ConeSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["e"] = self.DP:bindSS("spellE", coneQ, 60)
+				end
+			elseif slot == "r" then
+				if info.skillType == "line" then
+					local lineQ = self.DP:LineSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["r"] = self.DP:bindSS("spellR", lineQ, 60)
+				elseif info.skillType == "circle" then
+					local circleQ = self.DP:CircleSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["r"] = self.DP:bindSS("spellR", circleQ, 60)
+				elseif info.skillType == "cone" then
+					local coneQ = self.DP:ConeSS(info.speed, info.range, info.width / 2, info.delay, 0)
+					self.spellBinds["DP"]["r"] = self.DP:bindSS("spellR", coneQ, 60)
 				end
 			end
 		end
@@ -217,12 +313,15 @@ function ZPrediction:AddSpellData(spell, shotTypeI, skillTypeI, rangeI, widthI, 
 	end
 end
 
-function ZPrediction:Predict(spell, target, allowCol)
+function ZPrediction:Predict(spell, target, allowCol, source)
 	if not allowCol then allowCol = false end
+	local sourceUnit = myHero
+	if source then sourceUnit = source end
+	
 	if spell and target and _G.ZLib.spellData[myHero.charName][spell] and _G.ZLib.spellData[myHero.charName][spell].shotType == "skillshot" then
 		--Q
 		if spell == "Q" and _G.ZLib.menu.zPred.qPred == 1 then
-			local pos, hc, info = FHPrediction.GetPrediction("Q", target)
+			local pos, hc, info = FHPrediction.GetPrediction("Q", target, sourceUnit)
 			if pos and hc and hc > 0 and ((not allowCol and not info.collision) or allowCol) then
 				return {
 					castPos = pos,
@@ -231,7 +330,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 				}
 			end
 		elseif spell == "Q" and _G.ZLib.menu.zPred.qPred == 2 then
-			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["q"], target, myHero)
+			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["q"], target, sourceUnit)
 			if CastPosition and HitChance and ((not allowCol and not Collision) or allowCol) and ((_G.ZLib.menu.zPred.qTR == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.qTR == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.qTR == 3 and HitChance >= 2)) then
 				return {
 					castPos = CastPosition,
@@ -241,7 +340,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		elseif spell == "Q" and s_G.ZLib.menu.zPred.qPred == 3 then
 			if _G.ZLib.spellData[myHero.charName]["Q"].skillType == "line" then
-				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.qVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.qVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.qVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -250,7 +349,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["Q"].skillType == "circle" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.qVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.qVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.qVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -259,7 +358,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["Q"].skillType == "cone" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["Q"].delay, _G.ZLib.spellData[myHero.charName]["Q"].width, _G.ZLib.spellData[myHero.charName]["Q"].range, _G.ZLib.spellData[myHero.charName]["Q"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.qVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.qVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.qVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -268,9 +367,18 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			end
+		elseif spell == "Q" and _G.ZLib.menu.zPred.qPred == 4 then
+			local CastPosition, HitChance, Collision = self.DP:GetPrediction(self.spellBinds["TR"]["q"], target, sourceUnit)
+			if CastPosition and HitChance and ((not allowCol and not Collision) or allowCol) and ((_G.ZLib.menu.zPred.qTR == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.qTR == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.qTR == 3 and HitChance >= 2)) then
+				return {
+					castPos = CastPosition,
+					hitChance = HitChance,
+					pred = "TR"
+				}
+			end
 		--W
 		elseif spell == "W" and _G.ZLib.menu.zPred.wPred == 1 then
-			local pos, hc, info = FHPrediction.GetPrediction("W", target)
+			local pos, hc, info = FHPrediction.GetPrediction("W", target, sourceUnit)
 			if pos and hc and hc > 0 and ((not allowCol and not info.collision) or allowCol) then
 				return {
 					castPos = pos,
@@ -279,7 +387,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 				}
 			end
 		elseif spell == "W" and _G.ZLib.menu.zPred.wPred == 2 then
-			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["w"], target, myHero)
+			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["w"], target, sourceUnit)
 			if CastPosition and HitChance and ((not allowCol and not Collision) or allowCol) and ((_G.ZLib.menu.zPred.wTR == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.wTR == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.wTR == 3 and HitChance >= 2)) then
 				return {
 					castPos = CastPosition,
@@ -289,7 +397,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		elseif spell == "W" and _G.ZLib.menu.zPred.wPred == 3 then
 			if _G.ZLib.spellData[myHero.charName]["W"].skillType == "line" then
-				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.wVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.wVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.wVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -298,7 +406,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["W"].skillType == "circle" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.wVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.wVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.wVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -307,7 +415,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["W"].skillType == "cone" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["W"].delay, _G.ZLib.spellData[myHero.charName]["W"].width, _G.ZLib.spellData[myHero.charName]["W"].range, _G.ZLib.spellData[myHero.charName]["W"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.wVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.wVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.wVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -318,7 +426,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		--E
 		elseif spell == "E" and _G.ZLib.menu.zPred.ePred == 1 then
-			local pos, hc, info = FHPrediction.GetPrediction("E", target)
+			local pos, hc, info = FHPrediction.GetPrediction("E", target, sourceUnit)
 			if pos and hc and hc > 0 and ((not allowCol and not info.collision) or allowCol) then
 				return {
 					castPos = pos,
@@ -327,7 +435,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 				}
 			end
 		elseif spell == "E" and _G.ZLib.menu.zPred.ePred == 2 then
-			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["e"], target, myHero)
+			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["e"], target, sourceUnit)
 			if CastPosition and HitChance and ((not allowCol and not Collision) or allowCol) and ((_G.ZLib.menu.zPred.eTR == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.eTR == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.eTR == 3 and HitChance >= 2)) then
 				return {
 					castPos = CastPosition,
@@ -337,7 +445,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		elseif spell == "E" and _G.ZLib.menu.zPred.ePred == 3 then
 			if _G.ZLib.spellData[myHero.charName]["E"].skillType == "line" then
-				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.eVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.eVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.eVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -346,7 +454,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["E"].skillType == "circle" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.eVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.eVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.eVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -355,7 +463,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["E"].skillType == "cone" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["E"].delay, _G.ZLib.spellData[myHero.charName]["E"].width, _G.ZLib.spellData[myHero.charName]["E"].range, _G.ZLib.spellData[myHero.charName]["E"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.eVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.eVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.eVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -366,7 +474,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		--R
 		elseif spell == "R" and _G.ZLib.menu.zPred.rPred == 1 then
-			local pos, hc, info = FHPrediction.GetPrediction("R", target)
+			local pos, hc, info = FHPrediction.GetPrediction("R", target, sourceUnit)
 			if pos and hc and hc > 0 and ((not allowCol and not info.collision) or allowCol) then
 				return {
 					castPos = pos,
@@ -375,7 +483,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 				}
 			end
 		elseif spell == "R" and _G.ZLib.menu.zPred.rPred == 2 then
-			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["r"], target, myHero)
+			local CastPosition, HitChance, Collision = TRPrediction:GetPrediction(self.spellBinds["TR"]["r"], target, sourceUnit)
 			if CastPosition and HitChance and ((not allowCol and not Collision) or allowCol) and ((_G.ZLib.menu.zPred.rTR == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.rTR == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.rTR == 3 and HitChance >= 2)) then
 				return {
 					castPos = CastPosition,
@@ -385,7 +493,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 			end
 		elseif spell == "R" and _G.ZLib.menu.zPred.rPred == 3 then
 			if _G.ZLib.spellData[myHero.charName]["E"].skillType == "line" then
-				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetLineCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.rVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.rVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.rVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -394,7 +502,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["R"].skillType == "circle" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.rVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.rVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.rVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -403,7 +511,7 @@ function ZPrediction:Predict(spell, target, allowCol)
 					}
 				end
 			elseif _G.ZLib.spellData[myHero.charName]["R"].skillType == "cone" then
-				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, myHero, allowCol)
+				local CastPosition, HitChance = VPrediction:GetCircularCastPosition(target, _G.ZLib.spellData[myHero.charName]["R"].delay, _G.ZLib.spellData[myHero.charName]["R"].width, _G.ZLib.spellData[myHero.charName]["R"].range, _G.ZLib.spellData[myHero.charName]["R"].speed, sourceUnit, allowCol)
 				if CastPosition and HitChance and ((_G.ZLib.menu.zPred.rVP == 1 and HitChance >= 1) or (_G.ZLib.menu.zPred.rVP == 2 and HitChance >= 1.5) or (_G.ZLib.menu.zPred.rVP == 3 and HitChance >= 2)) then
 					return {
 						castPos = CastPosition,
@@ -439,6 +547,10 @@ function ZPrediction:LoadPrediction(pred)
 			elseif pred == "spred" then
 				require("SPrediction")
 				self.predLoaded[pred] = true
+			elseif pred == "dpred" then
+				require("DivinePred")
+				self.DP = DivinePred()
+				self.predLoaded[pred] = true
 			else
 				_G.ZLib.printDisplay:Error("Selected prediction not known")
 			end
@@ -462,6 +574,10 @@ function ZPrediction:OnTick()
 	if ((_G.ZLib.menu.zPred.qPred == 3) or (_G.ZLib.menu.zPred.wPred == 3) or (_G.ZLib.menu.zPred.ePred == 3) or (_G.ZLib.menu.zPred.rPred == 3) or (_G.ZLib.menu.zPred.hpPred == 3) or (_G.ZLib.menu.zPred.locPred == 3) or (_G.ZLib.menu.zPred.validPred == 3)) and not self.predLoaded["vpred"] then
 		self:LoadPrediction("vpred")
 	end
+	
+	if ((_G.ZLib.menu.zPred.qPred == 4) or (_G.ZLib.menu.zPred.wPred == 4) or (_G.ZLib.menu.zPred.ePred == 4) or (_G.ZLib.menu.zPred.rPred == 4) or (_G.ZLib.menu.zPred.hpPred == 4) or (_G.ZLib.menu.zPred.locPred == 4) or (_G.ZLib.menu.zPred.validPred == 4)) and not self.predLoaded["dpred"] then
+		self:LoadPrediction("dpred")
+	end
 end
 
 function ZPrediction:AddToMenu()
@@ -470,7 +586,8 @@ function ZPrediction:AddToMenu()
 		_G.ZLib.menu.zPred:addParam("qPred", "Q Prediction", SCRIPT_PARAM_LIST, 1, {
 			[1] = "FH Prediction",
 			[2] = "TR Prediction",
-			[3] = "V Prediction"
+			[3] = "V Prediction",
+			--[4] = "D Prediction"
 		})
 		_G.ZLib.menu.zPred:addParam("qVP", "Q V Pred Hitchance", SCRIPT_PARAM_LIST, 2, {
 			[1] = "Low",
@@ -489,7 +606,8 @@ function ZPrediction:AddToMenu()
 		_G.ZLib.menu.zPred:addParam("wPred", "W Prediction", SCRIPT_PARAM_LIST, 1, {
 			[1] = "FH Prediction",
 			[2] = "TR Prediction",
-			[3] = "V Prediction"
+			[3] = "V Prediction",
+			--[4] = "D Prediction"
 		})
 		_G.ZLib.menu.zPred:addParam("wVP", "W V Pred Hitchance", SCRIPT_PARAM_LIST, 2, {
 			[1] = "Low",
@@ -508,7 +626,8 @@ function ZPrediction:AddToMenu()
 		_G.ZLib.menu.zPred:addParam("ePred", "E Prediction", SCRIPT_PARAM_LIST, 1, {
 			[1] = "FH Prediction",
 			[2] = "TR Prediction",
-			[3] = "V Prediction"
+			[3] = "V Prediction",
+			--[4] = "D Prediction"
 		})
 		_G.ZLib.menu.zPred:addParam("eVP", "E V Pred Hitchance", SCRIPT_PARAM_LIST, 2, {
 			[1] = "Low",
@@ -527,7 +646,8 @@ function ZPrediction:AddToMenu()
 		_G.ZLib.menu.zPred:addParam("rPred", "R Prediction", SCRIPT_PARAM_LIST, 1, {
 			[1] = "FH Prediction",
 			[2] = "TR Prediction",
-			[3] = "V Prediction"
+			[3] = "V Prediction",
+			--[4] = "D Prediction"
 		})
 		_G.ZLib.menu.zPred:addParam("rVP", "R V Pred Hitchance", SCRIPT_PARAM_LIST, 2, {
 			[1] = "Low",
@@ -546,7 +666,8 @@ function ZPrediction:AddToMenu()
 	_G.ZLib.menu.zPred:addParam("hpPred", "HP Prediction", SCRIPT_PARAM_LIST, 1, {
 		[1] = "FH Prediction",
 		[2] = "TR Prediction",
-		[3] = "V Prediction"
+		[3] = "V Prediction",
+		--[4] = "D Prediction"
 	})
 	_G.ZLib.menu.zPred:addParam("space4", "-------------------", SCRIPT_PARAM_INFO, "")
 	
@@ -782,7 +903,305 @@ function ZUnitChecks:CountInRange(range, units)
 	end
 	return uCount
 end
+
+function ZUnitChecks:CountInRangeSpot(range, units, point)
+	local uCount = 0
+	if range and units then
+		for i, unit in pairs(units) do
+			if unit and GetDistance(unit, point) <= range then
+				uCount = uCount + 1
+			end
+		end
+	end
+	return uCount
+end
 --
 --End: Unit Checks (ZUnitChecks)
 --
 ------------------------------------------------------------------------------------------------------
+--
+--START: Heal/Shield Manager (ZHealManager)
+--
+class("ZHealManager")
+function ZHealManager:__init()
+	self.spellsAdded = 0
+end
+--[[
+Shot Type:
+skillshot
+target
+
+Skill Type:
+line
+circle
+target
+]]--
+function ZHealManager:AddHeal(spell, shotTypeI, skillTypeI, rangeI, widthI, speedI, canMinion, canHero, canTower, canMe, isSheild, blockAA, blockSpell, blockAD, blockAP)
+	if spell ~= nil and shotTypeI ~= nil then
+		--_G.ZLib.shieldData
+		_G.ZLib.shieldData[spell] = {
+			shotType = shotTypeI,
+			skillType = skillTypeI,
+			range = rangeI,
+			width = widthI,
+			delay = delayI,
+			speed = speedI,
+			targets = {
+				minion = canMinion,
+				hero = canHero,
+				tower = canTower,
+				me = canMe
+			},
+			blocks = {
+				aa = blockAA,
+				spell = blockSpell,
+				ad = blockAD,
+				ap = blockAP
+			}
+			
+		}
+		self.spellsAdded = self.spellsAdded + 1
+	end
+end
+
+function ZHealManager:ProcessAttack(object, spell)
+	if self.spellsAdded > 0 and object and spell and spell.target then
+		for i, spells in pairs(_G.ZLib.shieldData) do
+			local theSpell = nil
+			if i == "Q" then theSpell = _Q
+			elseif i == "W" then theSpell = _W
+			elseif i == "E" then theSpell = _E
+			elseif i == "R" then theSpell = _R end
+			
+			if theSpell and myHero:CanUseSpell(theSpell) == READY and GetDistance(spell.target) <= spells.range and spells.shotType == "target" then
+				if object.team ~= myHero.team and spell.name:lower():find("attack") and spells.blocks.aa then
+					if spells.targets.tower and spell.target.type == "obj_AI_Turret" and (100*spell.target.health/spell.target.maxHealth) < 100 then
+						CastSpell(theSpell, object)
+					elseif spells.targets.hero and spell.target.team == myHero.team then
+						CastSpell(theSpell, object)
+					end
+				end
+			elseif theSpell and myHero:CanUseSpell(theSpell) == READY and spell.shotType ~= "target" then
+				
+			end
+		end
+	end
+end
+--
+--End: Heal/Shield Manager (ZHealManager)
+--
+------------------------------------------------------------------------------------------------------
+--
+--START: Skill Shot Check (ZSkillShotCheck)
+--
+class("ZSkillShotCheck")
+function ZSkillShotCheck:__init()
+	self.allSkillData = {
+		["Ahri"] = {
+			["AhriOrbofDeception"] = { pretty = "Orb of Deception", slot = "Q",  range = 880, width = 80, speed = 2500, delay = 250, shape = "line", name = "AhriOrbofDeception", projectile = "Ahri_Orb_mis.troy", isCC = false, collision = { minion = false, hero = false }, dmgType = "AP" },
+			["AhriSeduce"] = { pretty = "Charm", slot = "E", range = 1000, width = 60, speed = 1000, delay = 250, shape = "line", name = "AhriSeduce", projectile = "Ahri_Charm_mis.troy", isCC = true, collision = { minion = true, hero = true }, dmgType = "AP"}
+		},
+		["Amumu"] = {
+			["BandageToss"] = { pretty = "Bandage Toss", slot = "Q", range = 1100, width = 80, speed = 2000, delay = 250, shape = "line", name = "BandageToss", projectile = "Bandage_beam.troy", isCC = true, collision = { minion = true, hero = true }, dmgType = "AP"}
+		},
+		["Anivia"] = {
+			["FlashFrostSpell"] = { pretty = "Flash Frost", slot = "Q", range = 1100, width = 110, speed = 850, delay = 250, shape = "line", name = "FlashFrostSpell", projectile = "cryo_FlashFrost_mis.troy", isCC = true, collision = { minion = false, hero = false }, dmgType = "AP"}
+		},
+		["Ashe"] = {
+			["AsheQ"] = { pretty = "Rangers Focus", aaBuff = true, slot = "Q" },
+			["Volley"] = { pretty = "Volley", slot = "W", range = 0, width = 0, speed = 0, delay = 0, shape = "cone", name = "Volley", projectile = "", isCC = false, collision = { minion = true, hero = true }, dmgType = "AD"},
+			["AsheSpiritOfTheHawk"] = { pretty = "Hawkshot", slot = "E", range = 0, width = 0, speed = 0, delay = 0, shape = "line", name = "AsheSpiritOfTheHawk", projectile = "", isCC = false, collision = { minion = false, hero = false }},
+			["EnchantedCrystalArrow"] = { pretty = "Crystal Arrow", slot = "R", range = math.huge, width = 0, speed = 0, delay = 0, shape = "line", name = "EnchantedCrystalArrow", projectile = "", isCC = true, collision = { minion = false, hero = true }, dmgType = "AD"}
+		},
+		["Vayne"] = {
+			pretty = "Vayne",
+			["VayneTumble"] = { pretty = "Tumble", isDash = true, slot = "Q" }
+		},
+		["Jax"] = {
+			pretty = "Jax",
+			["JaxLeapStrike"] = { pretty = "Leap Strike", slot = "Q", isDash = true },
+			["JaxEmpowerTwo"] = { pretty = "Empower", slot = "W" },
+			["JaxCounterStrike"] = { pretty = "Counter Strike", isCC = true, slot = "E" },
+			["JaxRelentlessAssault"] = { pretty = "Grandmasters Might", slot = "R" }
+		}
+	}
+	
+	self.summoners = {
+		["SummonerHeal"] = { pretty = "Heal" },
+		["SummonerHaste"] = { pretty = "Ghost" },
+		["SummonerBoost"] = { pretty = "Cleanse" },
+		["SummonerExhaust"] = { pretty = "Exhaust" },
+		["SummonerTeleport"] = { pretty = "Teleport" },
+		["SummonerBarrier"] = { pretty = "Barrier" },
+		["recall"] = { pretty = "Recall"}
+	}
+	
+	self.items = {
+		["ItemDarkCrystalFlask"] = { pretty = "Corrupting Potion" }
+	}
+end
+--
+--End: Skill Shot Check (ZSkillShotCheck)
+--
+------------------------------------------------------------------------------------------------------
+--
+--START: Pretty Notifications (ZNotifications) --Credit To: BlueCore for the origional code (temp until i make my own way)
+--
+class("ZNotifications")
+function ZNotifications:__init()
+	self.displayParams = {
+		length = 276,
+		width = 66,
+		position = {(WINDOW_W*0.995), (WINDOW_H*0.1)},
+		showTime = 0.5
+	}
+	self.blocks = {}
+	
+	_G.ZLib.menu:addSubMenu(">> Display Settings <<", "zDisplay")
+	_G.ZLib.menu.zDisplay:addParam("notification", "Show Notifications", SCRIPT_PARAM_ONOFF, true)
+end
+
+function ZNotifications:OnDraw()
+	if _G.ZLib.menu.zDisplay.notification == false then return end
+
+	if tableLength(self.blocks) > round((WINDOW_H / 108), 0) then
+		table.remove(self.blocks, 1)
+	end
+	
+	local inGameTime = GetGameTimer()
+	
+	for i, v in pairs(self.blocks) do
+		if v[3] + v[4] + self.displayParams.showTime <= inGameTime then
+			table.remove(self.blocks, i)
+		end
+		
+		v[5] = self.displayParams.position[1]
+		v[6] = self.displayParams.position[2] + (self.displayParams.width + 6) * (i - 1)
+		
+		if self.displayParams.showTime + v[4] >= inGameTime then
+            local percent = ((v[4] + self.displayParams.showTime) - inGameTime)/self.displayParams.showTime
+            v[5] = self.displayParams.position[1] + self.displayParams.length * percent
+        end
+		
+		if v[3] + v[4] <= inGameTime and v[3] + v[4] + self.displayParams.showTime > inGameTime then
+            local percent = (inGameTime - (v[4]+v[3]))/self.displayParams.showTime
+            v[5] = self.displayParams.position[1] + self.displayParams.length * percent
+        end
+		
+		self:ShowBlock(v[5], v[6], v[1], v[2])
+ 	end
+end
+
+function ZNotifications:ShowBlock(x, y, header, text)
+	local lenghtHeader = GetTextArea(header, 25).x - 240
+	local lenghtContext = GetTextArea(text, 20).x - 250
+	local extraLenght = lenghtHeader > lenghtContext and lenghtHeader or lenghtContext
+	local tileLenght = self:CursorIsOverTile(x, y) and self.displayParams.length + (extraLenght > 0 and extraLenght or 0) or self.displayParams.length
+	
+	local borderColor = self:CursorIsOverTile(x, y) and ARGB(255,93,86,58) or ARGB(255*0.5,93,86,58)
+	local borderThickness = 4
+	local borderYOffset = (self.displayParams.width * 0.5)
+	DrawLine(x - tileLenght, y - borderYOffset, x, y - borderYOffset, borderThickness, borderColor)
+	DrawLine(x - tileLenght, y + borderYOffset, x, y + borderYOffset, borderThickness, borderColor)
+	DrawLine(x - tileLenght + (borderThickness * 0.5), y - borderYOffset + (borderThickness * 0.5), x - tileLenght + (borderThickness * 0.5), y + borderYOffset - (borderThickness * 0.5), borderThickness, borderColor)
+	DrawLine(x - (borderThickness * 0.5), y - borderYOffset + (borderThickness * 0.5), x - (borderThickness * 0.5), y + borderYOffset - (borderThickness * 0.5), borderThickness, borderColor)
+	
+	local mainColor = self:CursorIsOverTile(x, y) and ARGB(255,12,19,18) or ARGB(255*0.5,12,19,18)
+	local mainBorderOffset = (borderThickness*0.5)
+	DrawLine(x - tileLenght + borderThickness, y, x - borderThickness, y, self.displayParams.width - borderThickness, mainColor)
+	
+	local boxColor = ARGB(255, 35,65,63)
+	local boxHeight = 24
+	local boxWidth = 24
+	local boxYOffset = (self.displayParams.width*0.5-boxHeight*0.5)
+	if self:CursorisOverBox(x, y) then
+		DrawLine(x - boxWidth - borderThickness, y - boxYOffset + mainBorderOffset, x - borderThickness, y - boxYOffset + mainBorderOffset, boxHeight, boxColor)
+	end
+	
+	local headerYOffset = 30;
+	local fixedHeader = (not self:CursorIsOverTile(x, y) and GetTextArea(header, 25).x > 240) and header:sub(1, 20).." ..." or header
+	DrawText(fixedHeader, 25, x - tileLenght + borderThickness*2, y - headerYOffset, ARGB(255, 127, 255, 212))
+	
+	local contextYOffsetLine1 = 5
+	local fixedContext = (not self:CursorIsOverTile(x, y) and GetTextArea(text, 20).x > 250) and text:sub(1, 25).." ..." or text
+	DrawText(fixedContext, 20, x - tileLenght + borderThickness*2, y + contextYOffsetLine1, ARGB(255, 250, 235, 215))
+	
+	DrawText("x",33,x - boxWidth, y -boxYOffset*2 +5,ARGB(255,143,188,143))
+end
+
+function ZNotifications:CursorIsOverTile(posX, posY)
+	local cursor = GetCursorPos()
+	local x = posX - cursor.x
+	local y = posY - cursor.y
+	return (x < self.displayParams.length and x > 0) and (y < 30 and y > -45)
+end
+
+function ZNotifications:CursorisOverBox(posX, posY)
+	local cursor = GetCursorPos()
+	local x = posX - cursor.x
+	local y = posY - cursor.y
+	return (x < 28 and x > 0) and (y < 24 and y > -10)
+end
+
+function ZNotifications:OnWndMsg(msg, wParam)
+	if msg ~= 513 then return end
+	for i, v in pairs(self.blocks) do
+		if self:CursorisOverBox(v[5], v[6]) then
+			v[3] = GetGameTimer() - v[4];
+		end
+	end
+end
+
+function ZNotifications:NewBlock(header, message, length)
+	self.blocks[tableLength(self.blocks) +1] = {header, message, length, GetGameTimer(), self.displayParams.position[1], self.displayParams.position[2]}
+end
+
+function ZNotifications:ProcessAttack(object, spell)
+	if object and spell and object.type == myHero.type then
+		local prettyName = spell.name
+		local prettyChamp = object.charName
+		local myTitle = nil
+		local myContent = nil
+		
+		if  _G.ZLib.skillShot.allSkillData[object.charName] and  _G.ZLib.skillShot.allSkillData[object.charName].pretty then
+			prettyChamp = _G.ZLib.skillShot.allSkillData[object.charName].pretty
+		end
+		
+		if _G.ZLib.skillShot.summoners[spell.name] and _G.ZLib.skillShot.summoners[spell.name].pretty then
+			prettyName = _G.ZLib.skillShot.summoners[spell.name].pretty
+			myContent = "Summoner spell " .. prettyName .. " used by " .. prettyChamp
+		elseif _G.ZLib.skillShot.items[spell.name] and _G.ZLib.skillShot.items[spell.name].pretty then
+			prettyName = _G.ZLib.skillShot.items[spell.name].pretty
+			myContent = "Item " .. prettyName .. " used by " .. prettyChamp
+		elseif _G.ZLib.skillShot.allSkillData[object.charName] and _G.ZLib.skillShot.allSkillData[object.charName][spell.name] and _G.ZLib.skillShot.allSkillData[object.charName][spell.name].pretty then
+			prettyName = _G.ZLib.skillShot.allSkillData[object.charName][spell.name].pretty
+			if _G.ZLib.skillShot.allSkillData[object.charName][spell.name].isDash then
+				myContent = "Dash spell " .. prettyName .. " used by " .. prettyChamp
+			elseif _G.ZLib.skillShot.allSkillData[object.charName][spell.name].isCC then
+				myContent = "CC spell " .. prettyName .. " used by " .. prettyChamp
+			elseif _G.ZLib.skillShot.allSkillData[object.charName][spell.name].shape then
+				myContent = "Skill spell " .. prettyName .. " used by " .. prettyChamp
+			end
+		end
+		
+		if myTitle == nil then
+			myTitle = prettyChamp
+		end
+		if myContent == nil then
+			myContent = "Spell " .. prettyName .. " used by " .. prettyChamp
+		end
+		
+		if _G.ZLib.skillShot.allSkillData[object.charName] and _G.ZLib.skillShot.allSkillData[object.charName][spell.name] and _G.ZLib.skillShot.allSkillData[object.charName][spell.name].slot then
+			myContent = myContent .. " [" .. _G.ZLib.skillShot.allSkillData[object.charName][spell.name].slot .. "]"
+		end
+		self:NewBlock(myTitle, myContent, 6)
+	end
+end
+--
+--End: Pretty Notifications (ZNotifications) --Credit To: BlueCore for the origional code (temp until i make my own way)
+--
+------------------------------------------------------------------------------------------------------
+
+function OnWndMsg(msg,wParam)
+	if _G.ZLib.notification then _G.ZLib.notification:OnWndMsg(msg, wParam) end
+end

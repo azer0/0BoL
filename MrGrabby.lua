@@ -3,7 +3,7 @@ if myHero.charName ~= "Blitzcrank" then return end
 local scriptInfo = {
 	doWeUpdate = true,
 	doWeDownload = true,
-	Version = 2
+	Version = 3
 }
 
 function LibDownloaderPrint(msg)
@@ -17,6 +17,7 @@ if scriptInfo.doWeDownload then
 		--Predictions
 		["FHPrediction"] = "http://api.funhouse.me/download-lua.php",
 		["TRPrediction"] = "https://raw.githubusercontent.com/Project4706/BoL/master/TRPrediction.lua",
+		["DPrediction"] = "https://raw.githubusercontent.com/Nader-Sl/BoLStudio/master/Scripts/Common/DivinePred.lua",
 		["VPrediction"] = "https://raw.githubusercontent.com/SidaBoL/Chaos/master/VPrediction.lua",
 	}
 
@@ -35,8 +36,6 @@ if scriptInfo.doWeDownload then
 		if FileExist(LIB_PATH .. libName .. ".lua") then
 			require(libName)
 		else
-			print(libUrl)
-			print(LIB_PATH .. libName .. ".lua")
 			isDownloading = true
 			downloadCount = downloadCount + 1
 			LibDownloaderPrint("<font color=\"#6699FF\">Downloading " .. libName .. ".</font>")
@@ -46,7 +45,8 @@ if scriptInfo.doWeDownload then
 	
 	if isDownloading then
 		LibDownloaderPrint("<font color=\"#6699FF\">Please double F9 after downloads are done.</font>")
-		return
+		--return
+		--return
 	end
 else
 	require("0Library")
@@ -98,6 +98,14 @@ function OnLoad()
 	local lib = ZLib("MrGrabby", "MrGrabby")
 	_G.ZLib.prediction:AddSpellData("Q", "skillshot", "line", 1000, 70, 0.25, 1800)
 	_G.ZLib.prediction:AddAntiDash("Q", "skillshot", "line", 1000, 70, 0.25, 1800)
+	
+	DelayAction(function()
+		_G.ZLib.printDisplay:Notice("Please note this is a early alpha version")
+		if scriptInfo.doWeUpdate then
+			_G.ZLib.printDisplay:Notice("Updates are enabled! When a new version is out it will be downloaded")
+		end
+		_G.ZLib.printDisplay:Notice("Thank you for using Mr Grabby [Blitzcrank]")
+	end, 10)
 	
 	_G.ZLib.prediction:AddToMenu()
 	CreateMenu()
@@ -361,3 +369,4 @@ function JungleClearMode()
 		end
 	end
 end
+
