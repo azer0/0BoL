@@ -402,4 +402,5 @@ function OnProcessSpell(unit, spell)
 			taricW.onTarget = spell.target
 		end
 	end
+	if _G.ZLib and _G.ZLib.notification then _G.ZLib.notification:ProcessAttack(object, spell) end
 end

@@ -370,3 +370,6 @@ function JungleClearMode()
 	end
 end
 
+function OnProcessSpell(unit, spell)
+	if _G.ZLib and _G.ZLib.notification then _G.ZLib.notification:ProcessAttack(object, spell) end
+end
